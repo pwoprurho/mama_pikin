@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Volunteer Queue{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <h2>Volunteer Queue</h2>
+    <p>This queue shows patients who need a human agent.</p>
+    <div class="table-section">
+        {% if patients %}
+            <table>
+                </table>
+        {% else %}
+            <div class="card"><p>No patients currently in the volunteer queue.</p></div>
+        {% endif %}
+    </div>
+    </div>
+{% endblock %}

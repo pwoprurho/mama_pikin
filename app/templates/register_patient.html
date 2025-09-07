@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Register Patient{% endblock %}
+{% block content %}
+<div class="form-wrapper" data-aos="fade-up">
+    <div class="form-container card">
+        <h2>Register New Patient</h2>
+        <form method="post">
+            <fieldset>
+                <legend>Patient Demographics</legend>
+                <div class="form-group">
+                    <label for="full_name">Full Name:</label>
+                    <input type="text" id="full_name" name="full_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone_number">Phone Number:</label>
+                    <input type="tel" id="phone_number" name="phone_number" required>
+                </div>
+                <div class="form-group">
+                    <label for="gender">Gender:</label>
+                    <select id="gender" name="gender">
+                        <option value="">Select Gender</option>
+                        <option value="Female">Female</option>
+                        <option value="Male">Male</option>
+                    </select>
+                </div>
+                 <div class="form-group">
+                    <label for="age">Age:</label>
+                    <input type="number" id="age" name="age" min="0">
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Location</legend>
+                <div class="form-group">
+                    <label for="state">State:</label>
+                    <select id="state" name="state_id" required>
+                        <option value="">-- Select a State --</option>
+                        {% for state in states %}
+                            <option value="{{ state.id }}">{{ state.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lga">LGA:</label>
+                    <select id="lga" name="lga_id" required>
+                        <option value="">-- Select a State First --</option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Medical Information (Optional)</legend>
+                <div class="form-group">
+                    <label for="blood_group">Blood Group:</label>
+                    <select id="blood_group" name="blood_group">
+                        <option value="">Unknown</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="genotype">Genotype:</label>
+                    <select id="genotype" name="genotype">
+                        <option value="">Unknown</option>
+                        <option value="AA">AA</option>
+                        <option value="AS">AS</option>
+                        <option value="SS">SS</option>
+                        <option value="AC">AC</option>
+                        <option value="SC">SC</option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Emergency Contact (Optional)</legend>
+                <div class="form-group">
+                    <label for="emergency_contact_name">Contact Name:</label>
+                    <input type="text" id="emergency_contact_name" name="emergency_contact_name">
+                </div>
+                <div class="form-group">
+                    <label for="emergency_contact_phone">Contact Phone:</label>
+                    <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone">
+                </div>
+            </fieldset>
+            
+            <button type="submit" class="btn">Register Patient</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

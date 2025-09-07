@@ -1,0 +1,25 @@
+# Virtual Environment
+venv/
+.venv/
+
+# Python Cache
+__pycache__/
+*.pyc
+
+# IDE/Editor Files
+.vscode/
+
+# Environment Secrets
+# --- MOST IMPORTANT ---
+.env
+
+# Large Data Files
+# Ignore the large PDF book, but not other static images
+14.DavidWerner-WhereThereIsNoDoctor.pdf
+README_DEPLOY.md
+
+# macOS
+.DS_Store
+# Thumbnails
+
+# python create_superuser.py --name "Head Developer" --email "akporuruho@gmail.com" --password "Ejiro28"

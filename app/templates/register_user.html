@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Register{% endblock %}
+{% block content %}
+<div class="form-wrapper" data-aos="fade-up">
+    <div class="form-container card">
+        <h2>Register New User</h2>
+        <form method="post">
+            <div class="form-group">
+                <label for="full_name">Full Name</label>
+                <input type="text" id="full_name" name="full_name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Email address</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" required>
+            </div>
+            <div class="form-group">
+                <label for="phone_number">Phone Number (Optional)</label>
+                <input type="tel" id="phone_number" name="phone_number">
+            </div>
+
+            <fieldset>
+                <legend>Location (Optional)</legend>
+                <div class="form-group">
+                    <label for="state">State:</label>
+                    <select id="state" name="state_id">
+                        <option value="">-- Select a State --</option>
+                        {% for state in states %}
+                            <option value="{{ state.id }}">{{ state.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lga">LGA:</label>
+                    <select id="lga" name="lga_id">
+                        <option value="">-- Select a State First --</option>
+                    </select>
+                </div>
+            </fieldset>
+
+            <div class="form-group">
+                <label for="spoken_languages">Languages Spoken</label>
+                <select id="spoken_languages" name="spoken_languages" multiple required>
+                    {% for lang in languages %}
+                        <option value="{{ lang }}">{{ lang }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit" class="btn">Register</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

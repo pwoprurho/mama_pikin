@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Schedule Appointment{% endblock %}
+{% block content %}
+<div class="form-wrapper" data-aos="fade-up">
+    <div class="form-container card">
+        <h2>Schedule Appointment for {{ patient.full_name }}</h2>
+        <form method="post">
+            <fieldset>
+                <legend>Appointment Details</legend>
+                <div class="form-group">
+                    <label for="appointment_datetime">Appointment Datetime:</label>
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required>
+                </div>
+                <div class="form-group">
+                    <label for="service_type">Service Type:</label>
+                    <select id="service_type" name="service_type" required>
+                        <option value="">Select Service Type</option>
+                        <option value="Antenatal Care">Antenatal Care</option>
+                        <option value="Postnatal Care">Postnatal Care</option>
+                        <option value="Childbirth Delivery">Childbirth Delivery</option>
+                        <option value="Immunization">Immunization</option>
+                        <option value="Vaccination">Vaccination</option>
+                        <option value="Family Planning">Family Planning</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="preferred_language">Preferred Language:</label>
+                    <select id="preferred_language" name="preferred_language" required>
+                        <option value="English">English</option>
+                        <option value="Yoruba">Yoruba</option>
+                        <option value="Hausa">Hausa</option>
+                        <option value="Igbo">Igbo</option>
+                    </select>
+                </div>
+            </fieldset>
+            <button type="submit" class="btn">Schedule Appointment</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

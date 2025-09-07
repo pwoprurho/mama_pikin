@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Agent Client</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; background-color: #f4f4f4; }
+        .container { text-align: center; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        #status { margin-top: 20px; font-size: 1.2em; color: #666; }
+        button { padding: 10px 20px; font-size: 1em; margin: 10px; border: none; border-radius: 5px; cursor: pointer; transition: background-color 0.3s; }
+        #connect-button { background-color: #4CAF50; color: white; }
+        #disconnect-button { background-color: #f44336; color: white; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Voice Agent Client</h1>
+        <p id="status">Disconnected</p>
+        <button id="connect-button">Connect to WebSocket</button>
+        <button id="disconnect-button" disabled>Disconnect</button>
+    </div>
+
+    <script>
+        const connectButton = document.getElementById('connect-button');
+        const disconnectButton = document.getElementById('disconnect-button');
+        const statusText = document.getElementById('status');
+        
+        let websocket;
+        let mediaRecorder;
+        let audioContext;
+        let audioSource;
+        const TARGET_SAMPLE_RATE = 8000;
+
+        function createAppointmentID() {
+            return 'xxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
+        
+        connectButton.addEventListener('click', () => {
+            const host = window.location.host;
+            const callSid = `client-${Date.now()}`;
+            const appointmentId = createAppointmentID();
+            const wsUrl = `wss://${host}/stream?call_sid=${callSid}&appointment_id=${appointmentId}`;
+            
+            websocket = new WebSocket(wsUrl);
+
+            websocket.onopen = () => {
+                statusText.textContent = "Connected";
+                connectButton.disabled = true;
+                disconnectButton.disabled = false;
+                startAudio();
+            };
+
+            websocket.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                if (data.event === "media" && data.media.payload) {
+                    const audioData = atob(data.media.payload);
+                    playAudio(audioData);
+                }
+            };
+
+            websocket.onclose = () => {
+                statusText.textContent = "Disconnected";
+                connectButton.disabled = false;
+                disconnectButton.disabled = true;
+                stopAudio();
+            };
+
+            websocket.onerror = (error) => {
+                console.error("WebSocket Error:", error);
+                statusText.textContent = "Error";
+                websocket.close();
+            };
+        });
+
+        disconnectButton.addEventListener('click', () => {
+            if (websocket && websocket.readyState === WebSocket.OPEN) {
+                const stopMessage = { event: "stop" };
+                websocket.send(JSON.stringify(stopMessage));
+                websocket.close();
+            }
+        });
+
+        async function startAudio() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(2048, 1, 1);
+                
+                processor.onaudioprocess = (event) => {
+                    const inputData = event.inputBuffer.getChannelData(0);
+                    const outputData = resampleAudio(inputData, audioContext.sampleRate, TARGET_SAMPLE_RATE);
+                    
+                    const pcmData = new Int16Array(outputData.length);
+                    for (let i = 0; i < outputData.length; i++) {
+                        pcmData[i] = Math.max(-1, Math.min(1, outputData[i])) * 0x7FFF;
+                    }
+                    
+                    if (websocket.readyState === WebSocket.OPEN) {
+                        const payload = btoa(String.fromCharCode.apply(null, new Uint8Array(pcmData.buffer)));
+                        const message = {
+                            event: "media",
+                            streamSid: "client-stream",
+                            media: {
+                                track: "inbound",
+                                chunk: 1,
+                                timestamp: Date.now(),
+                                payload: payload
+                            }
+                        };
+                        websocket.send(JSON.stringify(message));
+                    }
+                };
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+                audioSource = source;
+                
+                statusText.textContent = "Connected & Mic is On";
+            } catch (err) {
+                console.error("Error accessing microphone:", err);
+                statusText.textContent = "Error: Mic access denied";
+                if (websocket && websocket.readyState === WebSocket.OPEN) {
+                    websocket.close();
+                }
+            }
+        }
+        
+        function stopAudio() {
+            if (audioSource) {
+                audioSource.mediaStream.getTracks().forEach(track => track.stop());
+                audioSource = null;
+            }
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+        }
+        
+        function resampleAudio(pcmData, sourceSampleRate, targetSampleRate) {
+            if (sourceSampleRate === targetSampleRate) return pcmData;
+            const ratio = sourceSampleRate / targetSampleRate;
+            const resampledLength = Math.round(pcmData.length / ratio);
+            const resampledData = new Float32Array(resampledLength);
+            
+            for (let i = 0; i < resampledLength; i++) {
+                const index = i * ratio;
+                const a = Math.floor(index);
+                const b = a + 1;
+                const c = index - a;
+                if (b < pcmData.length) {
+                    resampledData[i] = pcmData[a] * (1 - c) + pcmData[b] * c;
+                } else {
+                    resampledData[i] = pcmData[a];
+                }
+            }
+            return resampledData;
+        }
+
+        function playAudio(audioData) {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            const arrayBuffer = new Uint8Array(audioData.length);
+            for (let i = 0; i < audioData.length; i++) {
+                arrayBuffer[i] = audioData.charCodeAt(i);
+            }
+            // Decode raw PCM data (mulaw)
+            const decodedData = new Float32Array(arrayBuffer.length);
+            for (let i = 0; i < arrayBuffer.length; i++) {
+                decodedData[i] = (arrayBuffer[i] / 128.0) - 1.0;
+            }
+
+            const buffer = audioContext.createBuffer(1, decodedData.length, 8000);
+            buffer.copyToChannel(decodedData, 0);
+            
+            const source = audioContext.createBufferSource();
+            source.buffer = buffer;
+            source.connect(audioContext.destination);
+            source.start(0);
+        }
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container dashboard-container">
+    <h2 data-aos="fade-up">Dashboard</h2>
+
+    <div class="card histogram-section" data-aos="fade-up">
+        <h3>Analytics</h3>
+        <div class="filters">
+            <div class="filter-group">
+                <label for="date-start">Start Date:</label>
+                <input type="date" id="date-start">
+            </div>
+            <div class="filter-group">
+                <label for="date-end">End Date:</label>
+                <input type="date" id="date-end">
+            </div>
+            <div class="filter-group">
+                <label for="service-type-filter">Service Type:</label>
+                <select id="service-type-filter">
+                    <option value="all">All</option>
+                    <option value="Antenatal Care">Antenatal Care</option>
+                    <option value="Vaccination">Vaccination</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="status-filter">Status:</label>
+                <select id="status-filter">
+                    <option value="all">All</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="rescheduled">Rescheduled</option>
+                </select>
+            </div>
+            
+            {% if sub_locations %}
+            <div class="filter-group">
+                <label for="lga-filter">Filter by My LGA:</label>
+                <select id="lga-filter">
+                    <option value="all">All My LGAs</option>
+                    {% for lga in sub_locations %}
+                        <option value="{{ lga.id }}">{{ lga.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            {% if current_user.role == 'supa_user' and all_states %}
+            <div class="filter-group">
+                <label for="state-filter">Filter by State:</label>
+                <select id="state-filter">
+                    <option value="all">All States</option>
+                    {% for state in all_states %}
+                        <option value="{{ state.id }}">{{ state.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="lga-filter-supa">Filter by LGA:</label>
+                <select id="lga-filter-supa" disabled>
+                    <option value="all">All LGAs</option>
+                    </select>
+            </div>
+            {% endif %}
+            
+            <button onclick="updateHistogram()" class="btn">Apply Filters</button>
+        </div>
+        <canvas id="serviceHistogramChart"></canvas>
+    </div>
+
+    </div>
+{% endblock %}

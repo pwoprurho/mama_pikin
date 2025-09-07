@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Bulk Upload Patients{% endblock %}
+{% block content %}
+<div class="form-wrapper" data-aos="fade-up">
+    <div class="form-container card">
+        <h2>Bulk Upload Patients</h2>
+        <form action="{{ url_for('views.bulk_upload') }}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file">Upload CSV or Excel File:</label>
+                <input type="file" id="file" name="file" accept=".csv, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/vnd.ms-excel" required>
+                <small class="form-text">
+                    File must contain columns: <strong>Patient Name, Patient Phone, State, LGA</strong>.
+                    <br>
+                    Optional columns: Gender, Age, Blood Group, Genotype.
+                </small>
+                <br>
+                <a href="{{ url_for('static', filename='templates/patient_upload_template.xlsx') }}" download class="template-link">Download Template</a>
+            </div>
+            <button type="submit" class="btn">Upload File</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

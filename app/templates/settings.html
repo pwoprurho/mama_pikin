@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}App Settings{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <div class="form-wrapper">
+        <div class="form-container card">
+            <h2>Application Settings</h2>
+            <p>Edit critical application variables. This page is restricted to Supa Users only.</p>
+            
+            <form method="post">
+                <div class="form-group">
+                    <label for="GEMINI_API_KEY">Gemini API Key:</label>
+                    <input type="text" id="GEMINI_API_KEY" name="GEMINI_API_KEY" value="{{ settings.get('GEMINI_API_KEY', '') }}" required>
+                    <small>The API key for the Google Gemini service.</small>
+                </div>
+
+                <button type="submit" class="btn">Save Settings</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

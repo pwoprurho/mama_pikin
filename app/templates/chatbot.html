@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Health Chatbot{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <div class="chatbot-container">
+        <div class="chat-window">
+            <div id="chat-messages">
+                <div class="message bot-message">
+                    Hello! I'm your personal health assistant. How can I help you today?
+                    <br>
+                    <small style="color:red;">Note: I am not a medical professional and this is for informational purposes only. Always consult a healthcare provider.</small>
+                </div>
+            </div>
+        </div>
+        <div class="chat-input">
+            <input type="text" id="user-input" placeholder="Type your message...">
+            <button id="send-button" class="btn">Send</button>
+        </div>
+    </div>
+</div>
+{% endblock %}

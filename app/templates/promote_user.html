@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Manage Users{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <h2>Manage User Roles</h2>
+    <p>Promote or demote user accounts based on your permissions.</p>
+
+    <div class="table-section">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Current Role</th>
+                    <th>Change Role To</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in volunteers %}
+                <tr>
+                    <td>{{ user.full_name }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.role | capitalize }}</td>
+                    <td>
+                        <form action="{{ url_for('views.promote_user') }}" method="post" class="role-form">
+                            <input type="hidden" name="user_id" value="{{ user.id }}">
+                            <select name="new_role">
+                                {% for role in promote_options %}
+                                    <option value="{{ role }}" {% if user.role == role %}selected{% endif %}>{{ role.capitalize() }}</option>
+                                {% endfor %}
+                            </select>
+                    </td>
+                    <td>
+                            <button type="submit" class="btn">Update</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">No users found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

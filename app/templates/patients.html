@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Patients{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h2>Patients List</h2>
+    <div>
+        <a href="{{ url_for('views.register_patient') }}" class="btn">Register Single Patient</a>
+        <a href="{{ url_for('views.bulk_upload') }}" class="btn">Bulk Upload</a>
+    </div>
+</div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Phone</th>
+                    <th>Location</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in patients %}
+                <tr>
+                    <td>{{ patient.full_name }}</td>
+                    <td>{{ patient.phone_number }}</td>
+                    <td>{{ patient.location }}</td>
+                    <td>
+                        <a href="{{ url_for('views.schedule_appointment', patient_id=patient.id) }}" class="btn">Schedule Appointment</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

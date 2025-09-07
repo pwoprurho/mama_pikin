@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}View Appointments{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <div class="card">
+        <h2>View Appointments</h2>
+        <form method="post" class="filters">
+            <div class="filter-group">
+                <label for="start_date">Start Date:</label>
+                <input type="date" id="start_date" name="start_date" value="{{ form_data.get('start_date', '') }}" required>
+            </div>
+            <div class="filter-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="{{ form_data.get('end_date', '') }}" required>
+            </div>
+            
+            <div class="filter-group">
+                <label for="state">State:</label>
+                <select id="state" name="state_id">
+                    <option value="">All States</option>
+                    {% for state in states %}
+                        <option value="{{ state.id }}" {% if form_data.get('state_id') == state.id|string %}selected{% endif %}>{{ state.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="lga">LGA:</label>
+                <select id="lga" name="lga_id">
+                    <option value="">All LGAs</option>
+                    </select>
+            </div>
+            
+            <button type="submit" class="btn">Filter Appointments</button>
+        </form>
+    </div>
+
+    {% if request.method == 'POST' and appointments %}
+    <div class="table-section" data-aos="fade-up" data-aos-delay="100">
+        <h3>Showing {{ appointments|length }} Appointments</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Patient Name</th>
+                    <th>Phone Number</th>
+                    <th>Appointment Time</th>
+                    <th>Service Type</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appt in appointments %}
+                <tr>
+                    <td>{{ appt.patients.full_name }}</td>
+                    <td>{{ appt.patients.phone_number }}</td>
+                    <td>{{ appt.appointment_datetime }}</td>
+                    <td>{{ appt.service_type }}</td>
+                    <td>{{ appt.status | capitalize }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% elif request.method == 'POST' %}
+    <div class="card" data-aos="fade-up" data-aos-delay="100">
+        <p>No appointments found for the selected criteria.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

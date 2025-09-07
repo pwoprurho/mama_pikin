@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Reports{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <div class="form-wrapper">
+        <div class="form-container card">
+            <h2>Generate Reports</h2>
+            <p>Select your criteria below to download a CSV report of appointment data. This feature is available only to National and Supa Users.</p>
+            
+            <form action="{{ url_for('api.download_report') }}" method="post" class="form-grid">
+                <div class="form-group">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="service_type">Service Type:</label>
+                    <select id="service_type" name="service_type">
+                        <option value="all">All Service Types</option>
+                        <option value="Antenatal Care">Antenatal Care</option>
+                        <option value="Postnatal Care">Postnatal Care</option>
+                        <option value="Childbirth Delivery">Childbirth Delivery</option>
+                        <option value="Immunization">Immunization</option>
+                        <option value="Vaccination">Vaccination</option>
+                        <option value="Family Planning">Family Planning</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status">
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="rescheduled">Rescheduled</option>
+                        <option value="transferred">Transferred</option>
+                        <option value="unreachable">Unreachable</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width">
+                    <button type="submit" class="btn">Download Report</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

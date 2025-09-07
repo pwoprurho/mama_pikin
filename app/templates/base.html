@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SafemamaPikin{% endblock %}</title>
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <h1><a href="{{ url_for('views.home') }}">SafemamaPikin</a></h1>
+        </div>
+        <nav class="nav-links">
+            <a href="{{ url_for('views.home') }}">Home</a>
+            <a href="{{ url_for('views.chatbot') }}">Chatbot</a>
+            {% if current_user.is_authenticated %}
+                <a href="{{ url_for('views.dashboard') }}">Dashboard</a>
+                <a href="{{ url_for('views.patients') }}">Patients</a>
+                <a href="{{ url_for('views.appointments') }}">Appointments</a>
+                <a href="{{ url_for('views.volunteer_queue') }}">Volunteer Queue</a>
+                {% if current_user.role in ['national', 'supa_user'] %}
+                    <a href="{{ url_for('views.reports') }}">Reports</a>
+                    <a href="{{ url_for('views.promote_user') }}">Manage Users</a>
+                {% endif %}
+                {% if current_user.role == 'supa_user' %}
+                    <a href="{{ url_for('views.settings') }}">Settings</a>
+                {% endif %}
+                <a href="{{ url_for('auth.logout') }}">Logout</a>
+            {% else %}
+                <a href="{{ url_for('auth.login') }}">Login</a>
+                <a href="{{ url_for('auth.register_user') }}">Register</a>
+            {% endif %}
+        </nav>
+    </aside>
+
+    <div class="main-content" id="main-content">
+        <header class="header">
+            <button id="menu-toggle" class="menu-toggle">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="logo-mobile">
+                <h1><a href="{{ url_for('views.home') }}">SafemamaPikin</a></h1>
+            </div>
+        </header>
+
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flashes">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
+
+        <footer class="footer">
+            <p>&copy; 2025 SafemamaPikin. All rights reserved.</p>
+        </footer>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/aos@next/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/countup.js@2.0.7/dist/countUp.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    
+    <script>
+      AOS.init({ once: true, duration: 800 });
+    </script>
+    
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
+</body>
+</html>
