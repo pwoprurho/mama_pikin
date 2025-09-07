@@ -6,9 +6,7 @@ from . import supabase, cache
 
 views_bp = Blueprint('views', __name__)
 
-# --- Helper function for bulk upload location mapping ---
 def get_location_map():
-    """Fetches all states and LGAs and creates a mapping for efficient lookups."""
     try:
         states_res = supabase.table('states').select('id, name').execute()
         lgas_res = supabase.table('lgas').select('id, name, state_id').execute()
@@ -21,24 +19,22 @@ def get_location_map():
 
 @views_bp.route('/')
 def home():
-    """Renders the public homepage."""
     return render_template('index.html')
 
 @views_bp.route('/dashboard')
 @login_required
 @cache.cached(timeout=300)
 def dashboard():
-    """Renders the main dashboard for logged-in users."""
     failed_escalations, sub_locations, all_states = [], [], []
     try:
         # A Supabase RPC function is recommended here for production performance
         query = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number)').eq('status', 'failed_escalation')
         res_escalations = query.limit(10).order('last_call_timestamp', desc=True).execute()
         failed_escalations = res_escalations.data
-        if current_user.role == 'state' and hasattr(current_user, 'state_id'):
+        if hasattr(current_user, 'role') and current_user.role == 'state' and hasattr(current_user, 'state_id'):
             res_lgas = supabase.table('lgas').select('id, name').eq('state_id', current_user.state_id).order('name').execute()
             sub_locations = res_lgas.data
-        if current_user.role == 'supa_user':
+        if hasattr(current_user, 'role') and current_user.role == 'supa_user':
             res_states = supabase.table('states').select('id, name').order('name').execute()
             all_states = res_states.data
     except Exception as e:
@@ -49,7 +45,6 @@ def dashboard():
 @login_required
 @cache.cached(timeout=300)
 def patients():
-    """Displays a searchable list of all registered patients."""
     try:
         res = supabase.table('patients').select('*, lgas!inner(name, states!inner(name))').limit(50).execute()
         patients = res.data
@@ -61,7 +56,6 @@ def patients():
 @views_bp.route('/register-patient', methods=['GET', 'POST'])
 @login_required
 def register_patient():
-    """Handles SINGLE new patient registration."""
     if request.method == 'POST':
         try:
             supabase.table('patients').insert({'full_name': request.form.get('full_name'), 'phone_number': request.form.get('phone_number'), 'lga_id': request.form.get('lga_id'), 'gender': request.form.get('gender'), 'age': request.form.get('age'), 'blood_group': request.form.get('blood_group'), 'genotype': request.form.get('genotype'), 'emergency_contact_name': request.form.get('emergency_contact_name'), 'emergency_contact_phone': request.form.get('emergency_contact_phone')}).execute()
@@ -79,7 +73,6 @@ def register_patient():
 @views_bp.route('/bulk-upload', methods=['GET', 'POST'])
 @login_required
 def bulk_upload():
-    """Handles production-level bulk patient uploads via CSV/XLSX."""
     if request.method == 'POST':
         if 'file' not in request.files or request.files['file'].filename == '':
             flash('No file part or no selected file', 'error')
@@ -118,7 +111,6 @@ def bulk_upload():
 @views_bp.route('/schedule-appointment/<uuid:patient_id>', methods=['GET', 'POST'])
 @login_required
 def schedule_appointment(patient_id):
-    """Handles scheduling an appointment for an existing patient."""
     if request.method == 'POST':
         try:
             supabase.table('master_appointments').insert({'patient_id': str(patient_id), 'appointment_datetime': request.form.get('appointment_datetime'), 'service_type': request.form.get('service_type'), 'preferred_language': request.form.get('preferred_language')}).execute()
@@ -129,54 +121,24 @@ def schedule_appointment(patient_id):
     patient = supabase.table('patients').select('*').eq('id', str(patient_id)).single().execute().data
     return render_template('schedule_appointment.html', patient=patient)
 
-
-
-# In app/views.py
-
 @views_bp.route('/appointments', methods=['GET', 'POST'])
 @login_required
 @role_required('local', 'state', 'national', 'supa_user')
 def appointments():
-    """Renders a page to view appointments filtered by date."""
-    appointment_list = []
-    # --- CORRECTED LOGIC ---
-    # Define form_data based on the request type
-    if request.method == 'POST':
-        form_data = request.form
-        start_date = form_data.get('start_date')
-        end_date = form_data.get('end_date')
-    else: # For a GET request
-        form_data = {}
-        start_date, end_date = None, None
-
-    if start_date and end_date:
+    appointment_list, start_date, end_date = [], request.form.get('start_date'), request.form.get('end_date')
+    if request.method == 'POST' and start_date and end_date:
         try:
-            query = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number)')
-            query = query.gte('appointment_datetime', start_date)
-            query = query.lte('appointment_datetime', end_date)
-            
+            query = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number)').gte('appointment_datetime', start_date).lte('appointment_datetime', end_date)
             res = query.order('appointment_datetime').execute()
             appointment_list = res.data
         except Exception as e:
             flash(f"An error occurred while fetching appointments: {e}", "error")
-
-    states = []
-    try:
-        states = supabase.table('states').select('*').order('name').execute().data
-    except Exception as e:
-        flash(f"Could not load states: {e}", "error")
-
-    # Always pass form_data to the template
-    return render_template('appointments.html', 
-                           appointments=appointment_list, 
-                           states=states,
-                           form_data=form_data)
+    return render_template('appointments.html', appointments=appointment_list, start_date=start_date, end_date=end_date)
 
 @views_bp.route('/volunteer-queue')
 @login_required
 @cache.cached(timeout=60)
 def volunteer_queue():
-    """Displays the queue of cases needing human intervention."""
     patients = []
     try:
         query = supabase.table('master_appointments').select('*, patients!inner(*)').in_('status', ['human_escalation', 'transferred'])

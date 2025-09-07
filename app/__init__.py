@@ -29,10 +29,8 @@ def create_app():
 
     # --- Asset Bundling Configuration ---
     assets.init_app(app)
-    # Define bundles for CSS and JS
     js_bundle = Bundle('script.js', filters='jsmin', output='gen/packed.js')
     css_bundle = Bundle('style.css', filters='cssmin', output='gen/packed.css')
-    # Register bundles with the application
     assets.register('js_all', js_bundle)
     assets.register('css_all', css_bundle)
 
