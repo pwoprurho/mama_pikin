@@ -7,6 +7,7 @@ from flask_login import login_required, current_user
 from .utils import role_required
 from . import supabase
 import requests
+# NOTE: Removed 'cache' import if it existed, as we are removing the cache decorator
 
 api_bp = Blueprint('api', __name__)
 
@@ -31,6 +32,7 @@ def perform_google_search(query):
         return []
 
 @api_bp.route('/api/public-stats')
+# NOTE: The @cache.cached(timeout=300) decorator was REMOVED here to ensure fresh data.
 def public_stats():
     """Provides the latest cached stats for the public homepage."""
     try:

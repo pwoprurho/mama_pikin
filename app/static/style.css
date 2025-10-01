@@ -1,5 +1,5 @@
 /* --- SafemamaPikin Global Stylesheet --- */
-/* --- Final Production Version --- */
+/* --- Final Production Version (with WhatsApp Chatbot Styling and Collapsible Sidebar) --- */
 
 /* --- Import Google Font (Inter) --- */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -15,6 +15,13 @@
     --border-color: #E0E0E0;
     --sidebar-bg: #E8F5E9; /* Light Green */
     --sidebar-text: #757575; /* Silver */
+
+    /* --- WhatsApp Chat Variables --- */
+    --wa-bg-chat: #E0DDD6; /* Light tiled background color */
+    --wa-bubble-user: #DCF8C6; /* Light green (user/sent) */
+    --wa-bubble-bot: #FFFFFF; /* White/Off-white (bot/received) */
+    --wa-green-header: #075E54; /* WhatsApp dark green */
+    --wa-teal-accent: #128C7E; /* WhatsApp teal */
 }
 
 /* --- 2. Global Resets & Body Styles --- */
@@ -30,11 +37,11 @@ body {
 /* --- 3. Sidebar Navigation (with New Colors) --- */
 .sidebar {
     width: 250px;
-    background-color: var(--sidebar-bg); /* --- UPDATED --- */
+    background-color: var(--sidebar-bg);
     border-right: 1px solid var(--border-color);
     position: fixed; top: 0; left: 0; height: 100%;
     z-index: 1001; padding: 1.5rem;
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
     display: flex; flex-direction: column;
     overflow-y: auto;
 }
@@ -44,12 +51,18 @@ body {
     padding: 0.8rem 1rem; 
     margin: 0.2rem 0; 
     border-radius: 8px; 
-    color: var(--sidebar-text); /* --- UPDATED --- */
+    color: var(--sidebar-text);
     font-weight: 500; 
     transition: all 0.2s ease-in-out;
+    display: flex;
+    align-items: center;
+}
+.sidebar .nav-links a i {
+    margin-right: 10px; /* Space for icon */
+    font-size: 1.2rem;
 }
 .sidebar .nav-links a:hover { 
-    background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white on hover */
+    background-color: rgba(255, 255, 255, 0.5);
     color: var(--text-primary); 
 }
 .sidebar .nav-links a.active { 
@@ -58,12 +71,45 @@ body {
     font-weight: 700; 
 }
 
+/* --- COLLAPSED STATE (Desktop) --- */
+.sidebar.collapsed {
+    width: 60px;
+    padding: 1.5rem 0.5rem;
+}
+.sidebar.collapsed .logo h1 a {
+    font-size: 0; /* Hide logo text */
+    text-align: center;
+    width: 100%;
+    height: 30px; 
+    overflow: hidden;
+}
+.sidebar.collapsed .nav-links a {
+    padding: 0.8rem 0;
+    justify-content: center;
+}
+.sidebar.collapsed .nav-links a span {
+    display: none; /* Hide link text */
+}
+.sidebar.collapsed .nav-links a i {
+    margin-right: 0; /* No space needed when text is hidden */
+}
+
+
 /* --- 4. Main Content Wrapper --- */
 .main-content {
     flex-grow: 1; margin-left: 250px;
     transition: margin-left 0.3s ease-in-out;
     display: flex; flex-direction: column; min-height: 100vh;
 }
+.main-content.sidebar-collapsed {
+    margin-left: 60px;
+}
+/* Re-establish desktop behavior for a clean transition */
+@media (min-width: 993px) {
+    .sidebar { transform: translateX(0); }
+    .main-content { margin-left: 250px; }
+}
+
 main { flex-grow: 1; }
 .container { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; }
 .header {
@@ -75,7 +121,7 @@ main { flex-grow: 1; }
 .footer { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem; }
 
 /* --- 5. Hamburger Menu Toggle --- */
-.menu-toggle { display: none; background: none; border: none; cursor: pointer; padding: 0; z-index: 1002; }
+.menu-toggle { display: block; background: none; border: none; cursor: pointer; padding: 0; z-index: 1002; margin-right: 1.5rem; }
 .menu-toggle span { display: block; width: 25px; height: 3px; background-color: var(--text-primary); margin: 5px 0; transition: all 0.3s ease; }
 .logo-mobile { display: none; }
 
@@ -107,21 +153,121 @@ tr:hover { background-color: #F9F9F9; }
 .hero-section, .impact-section, .features-section, .partners-section { text-align: center; padding: 4rem 2rem; }
 .image-section img { width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); margin-bottom: 2rem; }
 .error-page { text-align: center; padding: 4rem 0; }
-.chatbot-container { max-width: 700px; margin: 2rem auto; background-color: var(--bg-container); border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; height: 70vh; }
-.chat-window { flex-grow: 1; padding: 20px; overflow-y: auto; }
-.message { padding: 10px 15px; border-radius: 18px; margin-bottom: 10px; max-width: 80%; word-wrap: break-word; }
-.user-message { background-color: var(--accent-secondary); color: #0A2540; margin-left: auto; border-bottom-right-radius: 3px; }
-.bot-message { background-color: #F0F0F0; border-bottom-left-radius: 3px; }
-.chat-input { display: flex; padding: 1rem; border-top: 1px solid var(--border-color); }
-.chat-input input { flex-grow: 1; margin-right: 1rem; }
 
-/* --- 10. Responsive Behavior --- */
+
+/* --- WHATSAPP CHATBOT STYLES (OVERRIDE EXISTING) --- */
+.chatbot-container { 
+    max-width: 700px; 
+    margin: 2rem auto; 
+    background-color: var(--wa-bg-chat); /* WhatsApp Chat Background */
+    /* Tiled background effect */
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><circle fill="%23d0d3c6" cx="1" cy="1" r="1"/><circle fill="%23d0d3c6" cx="6" cy="6" r="1"/><circle fill="%23d0d3c6" cx="4" cy="4" r="1"/></svg>');
+    border-radius: 0; /* Full edges like a phone chat window */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+    display: flex; 
+    flex-direction: column; 
+    height: 70vh; 
+    overflow: hidden; /* Important for clean edges */
+}
+.chat-header-wa {
+    padding: 10px 15px;
+    background-color: var(--wa-teal-accent); /* WhatsApp Dark Teal/Green */
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+.chat-header-wa i {
+    margin-right: 10px;
+}
+.chat-window { 
+    flex-grow: 1; 
+    padding: 20px; 
+    overflow-y: auto; 
+    background-color: transparent; /* Let the tiled background show */
+}
+.message { 
+    padding: 8px 10px; 
+    border-radius: 10px; /* Softer rounded corners */
+    margin-bottom: 10px; 
+    max-width: 80%; 
+    word-wrap: break-word; 
+    position: relative;
+    font-size: 0.95rem;
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.1); /* Subtle 3D effect */
+}
+
+/* User (Sent) Message Bubble */
+.user-message { 
+    background-color: var(--wa-bubble-user); 
+    color: var(--text-primary); 
+    margin-left: auto; 
+    border-top-right-radius: 3px; /* WhatsApp sharp corner */
+}
+/* Bot (Received) Message Bubble */
+.bot-message { 
+    background-color: var(--wa-bubble-bot); 
+    color: var(--text-primary); 
+    border-top-left-radius: 3px; /* WhatsApp sharp corner */
+}
+.source-citation {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.75rem;
+    color: #888;
+    text-align: right; /* Align source citation for user bubble */
+}
+.bot-message .source-citation {
+    text-align: left;
+}
+
+.chat-input { 
+    display: flex; 
+    padding: 10px; 
+    background-color: #F0F0F0; /* Light gray input bar */
+    border-top: 1px solid var(--border-color);
+}
+.chat-input input { 
+    flex-grow: 1; 
+    margin-right: 10px; 
+    padding: 8px 15px;
+    border-radius: 20px; /* Pill-shaped input */
+    border: 1px solid #CCC;
+    box-shadow: none;
+}
+.chat-input .btn {
+    padding: 0.5rem 1rem;
+    background-color: var(--wa-teal-accent); /* WhatsApp Send/Action button color */
+    color: white;
+    font-weight: 500;
+    border-radius: 50%; /* Circular button */
+    width: 45px;
+    height: 45px;
+    min-width: 45px; /* ensure button doesn't shrink */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.chat-input .btn i {
+    color: white;
+    font-size: 1.2rem;
+}
+
+
+/* --- 10. Responsive Behavior (Mobile) --- */
 @media (max-width: 992px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.active { transform: translateX(0); }
     .main-content { margin-left: 0; }
+    .main-content.sidebar-collapsed { margin-left: 0; } /* Overrule desktop collapse */
     .header { justify-content: space-between; }
     .menu-toggle { display: block; }
     .logo-mobile { display: block; }
     .logo-mobile a { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
+    .sidebar.collapsed { width: 250px; padding: 1.5rem; } /* Override desktop collapse styles for mobile */
+    .sidebar.collapsed .logo h1 a { font-size: 1.5rem; height: auto; }
+    .sidebar.collapsed .nav-links a span { display: inline; }
+    .sidebar.collapsed .nav-links a i { margin-right: 10px; }
 }

@@ -6,6 +6,17 @@ from . import supabase, cache
 
 views_bp = Blueprint('views', __name__)
 
+def get_live_kpis():
+    """Fetches the current KPI values directly from the public_stats table."""
+    try:
+        res = supabase.table('public_stats').select('stat_key, stat_value').execute()
+        kpis = {item['stat_key']: item['stat_value'] for item in res.data}
+        return kpis
+    except Exception as e:
+        print(f"Error fetching live KPIs: {e}")
+        # Return zeros on failure
+        return {'patients_registered': 0, 'appointments_confirmed': 0, 'states_covered': 0}
+
 def get_location_map():
     try:
         states_res = supabase.table('states').select('id, name').execute()
@@ -19,7 +30,9 @@ def get_location_map():
 
 @views_bp.route('/')
 def home():
-    return render_template('index.html')
+    # NEW: Fetch live KPI data and pass it to the template
+    live_kpis = get_live_kpis()
+    return render_template('index.html', kpis=live_kpis)
 
 @views_bp.route('/dashboard')
 @login_required
@@ -27,10 +40,12 @@ def home():
 def dashboard():
     failed_escalations, sub_locations, all_states = [], [], []
     try:
-        # A Supabase RPC function is recommended here for production performance
-        query = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number)').eq('status', 'failed_escalation')
+        # Fetch FAILED ESCALATIONS for the dashboard table (Queue View component)
+        query = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number, lgas!inner(name))').eq('status', 'failed_escalation')
+        # Limiting to 10 for dashboard snapshot
         res_escalations = query.limit(10).order('last_call_timestamp', desc=True).execute()
         failed_escalations = res_escalations.data
+
         if hasattr(current_user, 'role') and current_user.role == 'state' and hasattr(current_user, 'state_id'):
             res_lgas = supabase.table('lgas').select('id, name').eq('state_id', current_user.state_id).order('name').execute()
             sub_locations = res_lgas.data
@@ -125,15 +140,53 @@ def schedule_appointment(patient_id):
 @login_required
 @role_required('local', 'state', 'national', 'supa_user')
 def appointments():
-    appointment_list, start_date, end_date = [], request.form.get('start_date'), request.form.get('end_date')
+    # Initialize variables for template and logic
+    appointment_list = []
+    
+    # 1. Capture form data or use defaults for GET request
+    if request.method == 'POST':
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        form_data = request.form.to_dict()
+    else:
+        # For a GET request, initialize empty data to prevent UndefinedError
+        start_date, end_date = None, None
+        form_data = {}
+
+    states = []
+    try:
+        # 2. Fetch states for the filter dropdown
+        states_res = supabase.table('states').select('id, name').order('name').execute()
+        states = states_res.data
+    except Exception as e:
+        flash(f"Could not load states for filters: {e}", "error")
+
+    # 3. Only run the appointment query if the form was submitted with dates
     if request.method == 'POST' and start_date and end_date:
         try:
-            query = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number)').gte('appointment_datetime', start_date).lte('appointment_datetime', end_date)
+            query = (
+                supabase.table('master_appointments')
+                .select('*, patients!inner(full_name, phone_number, lgas!inner(name, states!inner(name)))')
+                .gte('appointment_datetime', start_date)
+                .lte('appointment_datetime', end_date)
+            )
+            
+            # Add state/LGA filtering
+            if form_data.get('state_id'):
+                query = query.eq('patients.lgas.state_id', form_data.get('state_id'))
+            if form_data.get('lga_id'):
+                query = query.eq('patients.lga_id', form_data.get('lga_id'))
+
             res = query.order('appointment_datetime').execute()
             appointment_list = res.data
         except Exception as e:
             flash(f"An error occurred while fetching appointments: {e}", "error")
-    return render_template('appointments.html', appointments=appointment_list, start_date=start_date, end_date=end_date)
+            
+    # 4. Pass all necessary variables to the template
+    return render_template('appointments.html', 
+                           appointments=appointment_list, 
+                           form_data=form_data, 
+                           states=states) 
 
 @views_bp.route('/volunteer-queue')
 @login_required
@@ -141,7 +194,8 @@ def appointments():
 def volunteer_queue():
     patients = []
     try:
-        query = supabase.table('master_appointments').select('*, patients!inner(*)').in_('status', ['human_escalation', 'transferred'])
+        # Queue should focus on active human intervention cases.
+        query = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number, lgas!inner(name))').in_('status', ['transferred', 'human_escalation'])
         res = query.order('updated_at', desc=True).execute()
         patients = res.data
     except Exception as e:

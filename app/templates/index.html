@@ -17,15 +17,15 @@
             <h2 data-aos="fade-up">Our Impact at a Glance</h2>
             <div class="impact-grid">
                 <div class="kpi-card" data-aos="fade-up" data-aos-delay="100">
-                    <h3 id="kpi-patients-registered" class="kpi-number">0</h3>
+                    <h3 class="kpi-number"><span id="kpi-patients-registered">{{ kpis.patients_registered | default(0) }}</span></h3> 
                     <p>Patients Registered</p>
                 </div>
                 <div class="kpi-card" data-aos="fade-up" data-aos-delay="200">
-                    <h3 id="kpi-appointments-confirmed" class="kpi-number">0</h3>
+                    <h3 class="kpi-number"><span id="kpi-appointments-confirmed">{{ kpis.appointments_confirmed | default(0) }}</span></h3>
                     <p>Appointment Reminders Sent</p>
                 </div>
                 <div class="kpi-card" data-aos="fade-up" data-aos-delay="300">
-                    <h3 id="kpi-states-covered" class="kpi-number">0</h3>
+                    <h3 class="kpi-number"><span id="kpi-states-covered">{{ kpis.states_covered | default(0) }}</span></h3>
                     <p>States Covered</p>
                 </div>
             </div>

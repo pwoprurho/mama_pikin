@@ -5,7 +5,7 @@
     <h2 data-aos="fade-up">Dashboard</h2>
 
     <div class="card histogram-section" data-aos="fade-up">
-        <h3>Analytics</h3>
+        <h3>Appointment Volume by Service Type</h3>
         <div class="filters">
             <div class="filter-group">
                 <label for="date-start">Start Date:</label>
@@ -20,7 +20,12 @@
                 <select id="service-type-filter">
                     <option value="all">All</option>
                     <option value="Antenatal Care">Antenatal Care</option>
+                    <option value="Postnatal Care">Postnatal Care</option>
+                    <option value="Childbirth Delivery">Childbirth Delivery</option>
+                    <option value="Immunization">Immunization</option>
                     <option value="Vaccination">Vaccination</option>
+                    <option value="Family Planning">Family Planning</option>
+                    <option value="General">General</option>
                 </select>
             </div>
             <div class="filter-group">
@@ -29,6 +34,8 @@
                     <option value="all">All</option>
                     <option value="confirmed">Confirmed</option>
                     <option value="rescheduled">Rescheduled</option>
+                    <option value="unreachable">Unreachable</option>
+                    <option value="completed">Completed</option>
                 </select>
             </div>
             
@@ -65,6 +72,60 @@
             <button onclick="updateHistogram()" class="btn">Apply Filters</button>
         </div>
         <canvas id="serviceHistogramChart"></canvas>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card" data-aos="fade-up" data-aos-delay="100">
+            <h3>AI vs. Human Performance</h3>
+            <canvas id="agentCallsChart"></canvas>
+        </div>
+
+        <div class="card" data-aos="fade-up" data-aos-delay="200">
+            <h3>Appointment Outcomes</h3>
+            <canvas id="outcomesPieChart"></canvas>
+        </div>
+    </div>
+    
+    <div class="card" data-aos="fade-up" data-aos-delay="300">
+        <h3>Call Volume Over Time</h3>
+        <canvas id="callVolumeLineChart"></canvas>
+    </div>
+
+    <div class="card" data-aos="fade-up" data-aos-delay="400">
+        <h3>🚨 Recent Failed Escalations (Needs Attention)</h3>
+        <p>These are the latest patients the AI was unable to reach or handle, requiring a manual follow-up.</p>
+        {% if failed_escalations %}
+        <div class="table-section">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Patient Name</th>
+                        <th>Phone</th>
+                        <th>Location</th>
+                        <th>Last Call</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for escalation in failed_escalations %}
+                    <tr>
+                        <td>{{ escalation.patients.full_name }}</td>
+                        <td>{{ escalation.patients.phone_number }}</td>
+                        <td>{{ escalation.patients.lgas.name }}</td>
+                        <td>{{ escalation.last_call_timestamp }}</td>
+                        <td>{{ escalation.status | capitalize }}</td>
+                        <td>
+                            <button onclick="openModal('{{ escalation.appointment_id }}')" class="btn">View Case</button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p>🎉 Excellent! No failed escalations found in the last batch.</p>
+        {% endif %}
     </div>
 
     </div>

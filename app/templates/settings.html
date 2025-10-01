@@ -4,17 +4,45 @@
 <div class="container" data-aos="fade-up">
     <div class="form-wrapper">
         <div class="form-container card">
-            <h2>Application Settings</h2>
-            <p>Edit critical application variables. This page is restricted to Supa Users only.</p>
+            <h2>Application Settings (Virtual .env)</h2>
+            <p>Edit critical application variables and service provider keys in real-time. This page is restricted to Supa Users only.</p>
             
             <form method="post">
-                <div class="form-group">
-                    <label for="GEMINI_API_KEY">Gemini API Key:</label>
-                    <input type="text" id="GEMINI_API_KEY" name="GEMINI_API_KEY" value="{{ settings.get('GEMINI_API_KEY', '') }}" required>
-                    <small>The API key for the Google Gemini service.</small>
-                </div>
+                {% set setting_fields = [
+                    ('--- AI / Chatbot ---', ''),
+                    ('CURRENT_AI_PROVIDER', 'The main AI engine (e.g., GEMINI, OPENAI).'),
+                    ('CURRENT_AI_MODEL', 'The specific model name (e.g., gemini-1.5-flash, gpt-4-turbo).'),
+                    ('GEMINI_API_KEY', 'API key for Google Gemini/Generative AI.'),
+                    
+                    ('--- Voice / TTS ---', ''),
+                    ('TTS_PROVIDER', 'Text-to-Speech service (e.g., GOOGLE, AWS_POLLY).'),
+                    ('TTS_API_KEY', 'API key for the TTS provider.'),
+                    ('TTS_VOICE_NAME', 'The preferred voice ID for calls (e.g., en-US-Wavenet-F).'),
+                    
+                    ('--- SIP / Telephony ---', ''),
+                    ('SIP_TRUNK_PROVIDER', 'Voice/SIP trunk provider (e.g., TWILIO, VONAGE).'),
+                    ('SIP_TRUNK_API_KEY', 'SID or Account ID for the trunk provider.'),
+                    ('SIP_TRUNK_AUTH_TOKEN', 'Secret token for the trunk provider.'),
+                    
+                    ('--- Database / Security ---', ''),
+                    ('SUPABASE_URL', 'Base URL for the Supabase instance.'),
+                    ('SUPABASE_KEY', 'The anon key for Supabase.'),
+                    ('FLASK_SECRET_KEY', 'Used by Flask for session management. CHANGE THIS!'),
+                ] %}
 
-                <button type="submit" class="btn">Save Settings</button>
+                {% for key, description in setting_fields %}
+                    {% if key.startswith('---') %}
+                        <h4 style="margin-top: 2rem; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;">{{ key.strip('- ') }}</h4>
+                    {% else %}
+                        <div class="form-group">
+                            <label for="{{ key }}">{{ key | replace('_', ' ') | title }}:</label>
+                            <input type="text" id="{{ key }}" name="{{ key }}" value="{{ settings.get(key, '') }}" required>
+                            <small>{{ description }}</small>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                <button type="submit" class="btn">Save All Settings</button>
             </form>
         </div>
     </div>

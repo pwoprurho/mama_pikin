@@ -3,18 +3,21 @@
 {% block content %}
 <div class="container" data-aos="fade-up">
     <div class="chatbot-container">
+        <div class="chat-header-wa">
+            <h3 style="color: white; margin: 0; font-size: 1.1rem;"><i class="fas fa-robot"></i> SafemamaPikin AI</h3>
+        </div>
         <div class="chat-window">
             <div id="chat-messages">
                 <div class="message bot-message">
                     Hello! I'm your personal health assistant. How can I help you today?
                     <br>
-                    <small style="color:red;">Note: I am not a medical professional and this is for informational purposes only. Always consult a healthcare provider.</small>
+                    <small style="color:red; display: block; margin-top: 5px;">Note: I am not a medical professional and this is for informational purposes only. Always consult a healthcare provider.</small>
                 </div>
             </div>
         </div>
         <div class="chat-input">
             <input type="text" id="user-input" placeholder="Type your message...">
-            <button id="send-button" class="btn">Send</button>
+            <button id="send-button" class="btn"><i class="fas fa-paper-plane"></i></button>
         </div>
     </div>
 </div>

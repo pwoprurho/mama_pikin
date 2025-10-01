@@ -1,4 +1,8 @@
+# --- __init__.py (Complete file for copy-paste) ---
+
 import os
+import time
+import threading
 from flask import Flask, g, render_template
 from flask_login import LoginManager, current_user
 from flask_bcrypt import Bcrypt
@@ -14,7 +18,54 @@ login_manager = LoginManager()
 bcrypt = Bcrypt()
 cache = Cache()
 assets = Environment()
-supabase: Client = None # Will be initialized inside create_app
+supabase: Client = None # Global Supabase client initialized in create_app
+
+def update_public_stats(app):
+    """Recalculates and updates the public_stats table periodically."""
+    # Use app.app_context() when accessing Flask-related resources like the global 'supabase' client
+    with app.app_context():
+        # RUN ONCE IMMEDIATELY on startup
+        run_update(app)
+        
+        # Then, enter the periodic loop
+        while True:
+            # Wait for 60 minutes (3600 seconds)
+            time.sleep(3600) 
+            run_update(app)
+
+def run_update(app):
+    """Actual logic to query database and update stats."""
+    # Access the global supabase client which is guaranteed to be configured here
+    global supabase
+    
+    try:
+        # 1. Total Patients Registered
+        patients_res = supabase.table('patients').select('id', count='exact').execute()
+        patients_count = patients_res.count or 0
+
+        # 2. Total Appointments Confirmed
+        appointments_res = supabase.table('master_appointments').select('appointment_id', count='exact').eq('status', 'confirmed').execute()
+        appointments_count = appointments_res.count or 0
+        
+        # 3. States Covered
+        states_res = supabase.table('states').select('id', count='exact').execute()
+        states_count = states_res.count or 0
+        
+        stats_to_update = [
+            ('patients_registered', patients_count),
+            ('appointments_confirmed', appointments_count),
+            ('states_covered', states_count)
+        ]
+        
+        # Batch update the public_stats table
+        for key, value in stats_to_update:
+            supabase.table('public_stats').update({'stat_value': value}).eq('stat_key', key).execute()
+        
+        print(f"KPIs updated: Patients={patients_count}, Confirmed={appointments_count}, States={states_count}")
+
+    except Exception as e:
+        print(f"!!! ERROR in KPI Scheduler: {e} !!!")
+
 
 def create_app():
     # Load environment variables at the very start
@@ -39,6 +90,7 @@ def create_app():
     try:
         supabase_url = os.environ.get("SUPABASE_URL")
         supabase_key = os.environ.get("SUPABASE_KEY")
+        # Configure global supabase client instance
         supabase = create_client(supabase_url, supabase_key)
         print("Supabase client initialized.")
         
@@ -46,6 +98,12 @@ def create_app():
         print("Gemini configured successfully.")
     except Exception as e:
         print(f"!!! ERROR CONFIGURING SERVICES: {e} !!!")
+        
+    # START KPI SCHEDULER THREAD
+    # Pass the app instance, not the context, to the thread
+    scheduler_thread = threading.Thread(target=update_public_stats, args=(app,))
+    scheduler_thread.daemon = True
+    scheduler_thread.start()
     
     # Initialize Flask extensions with the app
     login_manager.init_app(app)

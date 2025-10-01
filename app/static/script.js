@@ -1,10 +1,10 @@
-// --- Main script for the SafemamaPikin application ---
-// --- Final Production Version ---
+// --- script.js (Complete file for copy-paste) ---
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize functions based on what's present on the current page
     if (document.getElementById('agentCallsChart')) initializeDashboard();
     if (document.getElementById('send-button')) setupChatbot();
+    // KPI LOGIC: Initialized directly on the server-rendered content
     if (document.getElementById('kpi-patients-registered')) initializePublicKpis();
     if (document.getElementById('notesModal')) setupVolunteerQueueModal();
     if (document.getElementById('state')) setupLocationDropdowns();
@@ -30,8 +30,38 @@ document.addEventListener('DOMContentLoaded', function() {
 function setupSidebarToggle() {
     const menuToggle = document.getElementById('menu-toggle');
     const sidebar = document.getElementById('sidebar');
+    const mainContent = document.getElementById('main-content');
+    
     menuToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
+        // Mobile behavior (below 992px): Toggle slide-out menu
+        if (window.innerWidth <= 992) {
+            sidebar.classList.toggle('active');
+        } else {
+            // Desktop behavior (above 992px): Toggle collapse/expand
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('sidebar-collapsed');
+        }
+    });
+
+    // Handle initial load and resize events to prevent mixed states
+    window.addEventListener('load', () => {
+        if (window.innerWidth > 992) {
+            // Default desktop state: expanded
+            sidebar.classList.remove('active');
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('sidebar-collapsed');
+        }
+    });
+
+    window.addEventListener('resize', () => {
+        if (window.innerWidth > 992) {
+            // Ensure mobile-only class is off
+            sidebar.classList.remove('active'); 
+        } else {
+            // Ensure desktop-only classes are off when on mobile
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('sidebar-collapsed');
+        }
     });
 }
 
@@ -42,7 +72,7 @@ function initializeDashboard() {
 }
 
 function fetchDashboardData() {
-    fetch('/dashboard-data')
+    fetch('/dashboard-data') 
         .then(response => response.json())
         .then(data => {
             if (data.bar_chart) renderBarChart(data.bar_chart);
@@ -113,19 +143,31 @@ function setupSupaUserLocationFilter() {
     });
 }
 
-// --- 3. PUBLIC KPI LOGIC ---
+// --- 3. PUBLIC KPI LOGIC (SIMPLE DISPLAY) ---
 function initializePublicKpis() {
-    fetch('/api/public-stats')
-        .then(response => response.json())
-        .then(data => {
-            const patients = new CountUp('kpi-patients-registered', data.patients_registered || 0);
-            const appointments = new CountUp('kpi-appointments-confirmed', data.appointments_confirmed || 0);
-            const states = new CountUp('kpi-states-covered', data.states_covered || 0);
-            if (!patients.error) patients.start();
-            if (!appointments.error) appointments.start();
-            if (!states.error) states.start();
-        })
-        .catch(error => console.error('Error fetching public stats:', error));
+    // Logic to animate the server-side rendered data.
+    try {
+        const patients_element = document.getElementById('kpi-patients-registered');
+        const appointments_element = document.getElementById('kpi-appointments-confirmed');
+        const states_element = document.getElementById('kpi-states-covered');
+
+        // Read the target count directly from the server-rendered HTML content
+        const patients_count = Number(patients_element.textContent) || 0;
+        const appointments_count = Number(appointments_element.textContent) || 0;
+        const states_count = Number(states_element.textContent) || 0;
+
+        // Initialize CountUp to animate from 0 up to the number already rendered by Jinja
+        const patients = new CountUp('kpi-patients-registered', patients_count, { startVal: 0 });
+        const appointments = new CountUp('kpi-appointments-confirmed', appointments_count, { startVal: 0 });
+        const states = new CountUp('kpi-states-covered', states_count, { startVal: 0 });
+        
+        // Start the animation
+        if (!patients.error) patients.start();
+        if (!appointments.error) appointments.start();
+        if (!states.error) states.start();
+    } catch(e) {
+        console.error("Error running CountUp animation on server-side rendered data:", e);
+    }
 }
 
 // --- 4. CHATBOT LOGIC ---
