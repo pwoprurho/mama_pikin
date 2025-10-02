@@ -83,7 +83,7 @@ def handle_chatbot():
     if not user_question: return jsonify({'response': 'Please ask a question.'})
 
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         
         # Step 1: Classify the user's intent more granularly
         intent_prompt = f"""Classify the user's intent from the following input. Is it a 'greeting', 'direct_health_question', 'symptom_description', or 'first_aid_emergency'? Respond with only one of these options. Input: '{user_question}'"""
