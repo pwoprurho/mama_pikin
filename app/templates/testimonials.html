@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Testimonials & Videos{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <h2>Our Impact Stories</h2>
+    <p class="subtitle">Hear and see how the SafemamaPikin initiative is making a difference in communities.</p>
+
+    <div class="video-grid">
+        {% for video in videos %}
+        <div class="video-card card" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+            <h3>{{ video.title }}</h3>
+            <div class="video-embed">
+                <iframe 
+                    width="100%" 
+                    height="315" 
+                    src="https://www.youtube.com/embed/{{ video.youtube_id }}" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <p>{{ video.description | default('No description provided.', true) }}</p>
+        </div>
+        {% else %}
+        <div class="card">
+            <p>No active testimonials or videos found yet. Check back soon!</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<style>
+/* Basic CSS for the video grid and embeds */
+.video-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
+.video-embed {
+    position: relative;
+    width: 100%;
+    height: 0;
+    padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+    margin-bottom: 1rem;
+}
+.video-embed iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 8px;
+}
+</style>
+{% endblock %}

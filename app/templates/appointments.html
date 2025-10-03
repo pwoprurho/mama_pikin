@@ -34,17 +34,19 @@
         </form>
     </div>
 
-    {% if request.method == 'POST' and appointments %}
     <div class="table-section" data-aos="fade-up" data-aos-delay="100">
-        <h3>Showing {{ appointments|length }} Appointments</h3>
+        <h3>{% if appointments %}Showing {{ appointments|length }} Appointments{% else %}Filter to load appointments.{% endif %}</h3>
         <table>
             <thead>
                 <tr>
                     <th>Patient Name</th>
                     <th>Phone Number</th>
+                    <th>State</th>
+                    <th>LGA</th>
                     <th>Appointment Time</th>
                     <th>Service Type</th>
                     <th>Status</th>
+                    <th>Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,18 +54,18 @@
                 <tr>
                     <td>{{ appt.patients.full_name }}</td>
                     <td>{{ appt.patients.phone_number }}</td>
+                    <td>{{ appt.patients.lgas.states.name }}</td>
+                    <td>{{ appt.patients.lgas.name }}</td>
                     <td>{{ appt.appointment_datetime }}</td>
                     <td>{{ appt.service_type }}</td>
                     <td>{{ appt.status | capitalize }}</td>
+                    <td>
+                        <a href="{{ url_for('views.edit_appointment', appointment_id=appt.appointment_id) }}" class="btn small-btn">Edit</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    {% elif request.method == 'POST' %}
-    <div class="card" data-aos="fade-up" data-aos-delay="100">
-        <p>No appointments found for the selected criteria.</p>
-    </div>
-    {% endif %}
 </div>
 {% endblock %}

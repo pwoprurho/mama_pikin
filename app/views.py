@@ -30,7 +30,7 @@ def get_location_map():
 
 @views_bp.route('/')
 def home():
-    # NEW: Fetch live KPI data and pass it to the template
+    # Fetch live KPI data and pass it to the template
     live_kpis = get_live_kpis()
     return render_template('index.html', kpis=live_kpis)
 
@@ -188,6 +188,59 @@ def appointments():
                            form_data=form_data, 
                            states=states) 
 
+@views_bp.route('/edit-appointment/<uuid:appointment_id>', methods=['GET', 'POST'])
+@login_required
+@role_required('local', 'state', 'national', 'supa_user')
+def edit_appointment(appointment_id):
+    appointment_id_str = str(appointment_id)
+    
+    statuses = ['pending', 'confirmed', 'rescheduled', 'transferred', 'unreachable', 'calling', 'human_escalation', 'failed_escalation', 'completed']
+    service_types = ['Antenatal Care', 'Postnatal Care', 'Childbirth Delivery', 'Immunization', 'Vaccination', 'Family Planning', 'General']
+    languages = ['English', 'Yoruba', 'Hausa', 'Igbo', 'Pidgin']
+
+    if request.method == 'POST':
+        try:
+            # Gather status and optional notes
+            new_status = request.form.get('status')
+            volunteer_notes = request.form.get('volunteer_notes')
+            
+            update_data = {
+                'status': new_status,
+                'service_type': request.form.get('service_type'),
+                'preferred_language': request.form.get('preferred_language'),
+                'volunteer_notes': volunteer_notes,
+                'volunteer_id': current_user.id # Log which volunteer made the last update
+            }
+            
+            # Update the appointment in Supabase
+            supabase.table('master_appointments').update(update_data).eq('appointment_id', appointment_id_str).execute()
+
+            flash('Appointment updated successfully.', 'success')
+            return redirect(url_for('views.appointments'))
+        except Exception as e:
+            flash(f'Error updating appointment: {e}', 'error')
+            return redirect(url_for('views.edit_appointment', appointment_id=appointment_id))
+
+    # GET request: Fetch the current appointment data
+    try:
+        # Note: We must fetch patient data to display patient name/info
+        appt_res = supabase.table('master_appointments').select('*, patients!inner(full_name, phone_number)').eq('appointment_id', appointment_id_str).single().execute()
+        appointment = appt_res.data
+        
+        if not appointment:
+            flash("Appointment not found.", "error")
+            return redirect(url_for('views.appointments'))
+
+    except Exception as e:
+        flash(f"Error fetching appointment details: {e}", "error")
+        return redirect(url_for('views.appointments'))
+        
+    return render_template('edit_appointment.html', 
+                           appointment=appointment, 
+                           statuses=statuses, 
+                           service_types=service_types,
+                           languages=languages)
+
 @views_bp.route('/volunteer-queue')
 @login_required
 @cache.cached(timeout=60)
@@ -206,6 +259,59 @@ def volunteer_queue():
 def chatbot():
     return render_template('chatbot.html')
 
+@views_bp.route('/manage-videos', methods=['GET', 'POST'])
+@login_required
+@role_required('national', 'supa_user')
+def manage_videos():
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        youtube_url = request.form.get('youtube_url')
+        
+        # Extract YouTube ID from URL
+        youtube_id = None
+        if 'youtube.com/watch?v=' in youtube_url:
+            youtube_id = youtube_url.split('v=')[-1].split('&')[0]
+        elif 'youtu.be/' in youtube_url:
+            youtube_id = youtube_url.split('youtu.be/')[-1].split('?')[0]
+        
+        if not youtube_id:
+            flash("Invalid YouTube URL provided. Ensure it is a full URL or shortened youtu.be link.", "error")
+            return redirect(url_for('views.manage_videos'))
+
+        try:
+            supabase.table('public_videos').insert({
+                'title': title,
+                'description': description,
+                'youtube_id': youtube_id,
+                'added_by': current_user.id
+            }).execute()
+            flash('Video added successfully.', 'success')
+            return redirect(url_for('views.manage_videos'))
+        except Exception as e:
+            flash(f'Error adding video: {e}', 'error')
+    
+    # GET request: Fetch all videos
+    videos = []
+    try:
+        videos = supabase.table('public_videos').select('*, volunteers(full_name)').order('created_at', desc=True).execute().data
+    except Exception as e:
+        flash(f"Error fetching videos: {e}", "error")
+
+    return render_template('manage_videos.html', videos=videos)
+
+@views_bp.route('/testimonials')
+def testimonials():
+    active_videos = []
+    try:
+        # Only fetch active videos for the public page
+        active_videos = supabase.table('public_videos').select('*').eq('is_active', True).order('created_at', desc=True).execute().data
+    except Exception as e:
+        # Don't flash errors to public users
+        print(f"Error loading public testimonials: {e}") 
+        
+    return render_template('testimonials.html', videos=active_videos)
+
 @views_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 @role_required('supa_user')
@@ -221,7 +327,7 @@ def settings():
     settings = {}
     try:
         res = supabase.table('app_settings').select('*').execute()
-        settings = {item['setting_key']: item['setting_value'] for item in res.data}
+        settings = {item['setting_key']: item['stat_value'] if 'stat_value' in item else item['setting_value'] for item in res.data}
     except Exception as e:
         flash(f"Error fetching settings: {e}", "error")
     return render_template('settings.html', settings=settings)

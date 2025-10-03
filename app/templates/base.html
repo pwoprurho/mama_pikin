@@ -24,6 +24,8 @@
         <nav class="nav-links">
             <a href="{{ url_for('views.home') }}"><i class="fas fa-home"></i><span>Home</span></a>
             <a href="{{ url_for('views.chatbot') }}"><i class="fas fa-robot"></i><span>Chatbot</span></a>
+            <a href="{{ url_for('views.testimonials') }}"><i class="fas fa-video"></i><span>Testimonials</span></a>
+
             {% if current_user.is_authenticated %}
                 <a href="{{ url_for('views.dashboard') }}"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
                 <a href="{{ url_for('views.patients') }}"><i class="fas fa-users"></i><span>Patients</span></a>
@@ -31,6 +33,7 @@
                 <a href="{{ url_for('views.volunteer_queue') }}"><i class="fas fa-headset"></i><span>Volunteer Queue</span></a>
                 {% if current_user.role in ['national', 'supa_user'] %}
                     <a href="{{ url_for('views.reports') }}"><i class="fas fa-file-alt"></i><span>Reports</span></a>
+                    <a href="{{ url_for('views.manage_videos') }}"><i class="fas fa-plus-square"></i><span>Manage Videos</span></a>
                     <a href="{{ url_for('views.promote_user') }}"><i class="fas fa-user-shield"></i><span>Manage Users</span></a>
                 {% endif %}
                 {% if current_user.role == 'supa_user' %}

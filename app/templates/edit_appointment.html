@@ -1,0 +1,60 @@
+<style>
+/* Temporary style for small buttons */
+.small-btn { padding: 0.4rem 0.8rem; font-size: 0.9rem; }
+</style>
+
+{% extends "base.html" %}
+{% block title %}Edit Appointment{% endblock %}
+{% block content %}
+<div class="form-wrapper" data-aos="fade-up">
+    <div class="form-container card">
+        <h2>Edit Appointment for {{ appointment.patients.full_name }}</h2>
+        <p>Patient Phone: **{{ appointment.patients.phone_number }}**</p>
+        <p>Scheduled: **{{ appointment.appointment_datetime }}**</p>
+        <hr>
+        <form method="post">
+            <fieldset>
+                <legend>Appointment Details</legend>
+                
+                <div class="form-group">
+                    <label for="service_type">Service Type:</label>
+                    <select id="service_type" name="service_type" required>
+                        {% for type in service_types %}
+                            <option value="{{ type }}" {% if appointment.service_type == type %}selected{% endif %}>{{ type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="preferred_language">Preferred Language:</label>
+                    <select id="preferred_language" name="preferred_language" required>
+                        {% for lang in languages %}
+                            <option value="{{ lang }}" {% if appointment.preferred_language == lang %}selected{% endif %}>{{ lang }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Call Status & Notes</legend>
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status" required>
+                        {% for status in statuses %}
+                            <option value="{{ status }}" {% if appointment.status == status %}selected{% endif %}>{{ status | capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="volunteer_notes">Volunteer Notes:</label>
+                    <textarea id="volunteer_notes" name="volunteer_notes" rows="4">{{ appointment.volunteer_notes | default('', true) }}</textarea>
+                    <small>Record detailed information about the patient's call outcome here.</small>
+                </div>
+            </fieldset>
+
+            <button type="submit" class="btn">Update Appointment</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
