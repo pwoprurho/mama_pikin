@@ -1,20 +1,33 @@
 {% extends "base.html" %}
 {% block title %}Patients{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h2>Patients List</h2>
-    <div>
-        <a href="{{ url_for('views.register_patient') }}" class="btn">Register Single Patient</a>
-        <a href="{{ url_for('views.bulk_upload') }}" class="btn">Bulk Upload</a>
+<div class="container" data-aos="fade-up">
+    <div class="page-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <h2>Patients List</h2>
+        <div class="actions">
+            <a href="{{ url_for('views.register_patient') }}" class="btn">New Patient</a>
+            <a href="{{ url_for('views.bulk_upload') }}" class="btn btn-secondary">Bulk Upload</a>
+        </div>
     </div>
-</div>
+
+    <div class="search-bar card" style="padding: 1rem; margin-bottom: 1rem;">
+        <form method="get" action="{{ url_for('views.patients') }}" style="display: flex; gap: 10px;">
+            <input type="text" name="q" placeholder="Search by name..." value="{{ search_query }}" style="flex: 1; padding: 0.5rem;">
+            <button type="submit" class="btn">Search</button>
+            {% if search_query %}
+                <a href="{{ url_for('views.patients') }}" class="btn btn-secondary" style="line-height: 2;">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <div class="table-section card">
         <table>
             <thead>
                 <tr>
                     <th>Name</th>
                     <th>Phone</th>
                     <th>Location</th>
-                    <th>Action</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -22,14 +35,33 @@
                 <tr>
                     <td>{{ patient.full_name }}</td>
                     <td>{{ patient.phone_number }}</td>
-                    <td>{{ patient.location }}</td>
+                    <td>{{ patient.lgas.name }}, {{ patient.lgas.states.name }}</td>
                     <td>
-                        <a href="{{ url_for('views.schedule_appointment', patient_id=patient.id) }}" class="btn">Schedule Appointment</a>
+                        <a href="{{ url_for('views.schedule_appointment', patient_id=patient.id) }}" class="btn small-btn">Book</a>
+                        <a href="{{ url_for('views.edit_patient', patient_id=patient.id) }}" class="btn small-btn btn-secondary">Edit</a>
                     </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" style="text-align: center;">No patients found.</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+
+        {% if pagination.total > 1 %}
+        <div class="pagination" style="margin-top: 1rem; text-align: center;">
+            {% if pagination.has_prev %}
+                <a href="{{ url_for('views.patients', page=pagination.prev_num, q=search_query) }}" class="btn small-btn">&laquo; Prev</a>
+            {% endif %}
+            
+            <span style="margin: 0 10px;">Page {{ pagination.current }} of {{ pagination.total }}</span>
+            
+            {% if pagination.has_next %}
+                <a href="{{ url_for('views.patients', page=pagination.next_num, q=search_query) }}" class="btn small-btn">Next &raquo;</a>
+            {% endif %}
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

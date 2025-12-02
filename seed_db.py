@@ -1,61 +1,69 @@
 import os
-import pdfplumber
 import google.generativeai as genai
-from supabase import create_client, Client
+from supabase import create_client
 from dotenv import load_dotenv
 
-# --- CONFIGURATION ---
-PDF_PATH = r"C:\Users\Administrator\mama_pikin\14.DavidWerner-WhereThereIsNoDoctor.pdf"
-CHUNK_SIZE = 500  # Number of characters per chunk
-CHUNK_OVERLAP = 50 # Number of characters to overlap between chunks
+# 1. Load Config
+load_dotenv()
+SUPABASE_URL = os.environ.get("SUPABASE_URL")
+SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-def embed_book():
-    load_dotenv()
-    
-    # Initialize clients
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-    supabase_url = os.environ.get("SUPABASE_URL")
-    supabase_key = os.environ.get("SUPABASE_KEY")
-    supabase: Client = create_client(supabase_url, supabase_key)
-    
-    print("Step 1: Reading and chunking the PDF...")
-    # Read PDF and split into chunks
-    full_text = ""
-    with pdfplumber.open(PDF_PATH) as pdf:
-        for page in pdf.pages:
-            full_text += page.extract_text() + "\n"
-    
-    chunks = []
-    start = 0
-    while start < len(full_text):
-        end = start + CHUNK_SIZE
-        chunks.append(full_text[start:end])
-        start += CHUNK_SIZE - CHUNK_OVERLAP
+if not all([SUPABASE_URL, SUPABASE_KEY, GEMINI_API_KEY]):
+    print("Error: Missing environment variables. Check .env file.")
+    exit()
 
-    print(f"PDF processed into {len(chunks)} chunks.")
-    
-    print("Step 2: Generating embeddings and storing in Supabase...")
-    for i, chunk in enumerate(chunks):
+# 2. Initialize Clients
+supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+genai.configure(api_key=GEMINI_API_KEY)
+
+# 3. Sample Health Data (Add more as needed)
+health_docs = [
+    {
+        "content": "Antenatal care (ANC) is the care you get from health professionals during your pregnancy. It's sometimes called pregnancy care or maternity care. You should start ANC as soon as you know you're pregnant.",
+        "metadata": {"source": "NHS Guide", "topic": "Antenatal"}
+    },
+    {
+        "content": "Danger signs in pregnancy include: severe headache, blurred vision, convulsions (fits), severe abdominal pain, vaginal bleeding, and fever. If you experience any of these, go to the hospital immediately.",
+        "metadata": {"source": "WHO Maternal Health", "topic": "Emergency"}
+    },
+    {
+        "content": "Exclusive breastfeeding is recommended for the first 6 months of life. It provides all the nutrients a baby needs for growth and development.",
+        "metadata": {"source": "UNICEF Nutrition", "topic": "Postnatal"}
+    },
+    {
+        "content": "Childhood immunization schedule in Nigeria: BCG and OPV0 at birth; OPV1, Penta1, PCV1 at 6 weeks; OPV2, Penta2, PCV2 at 10 weeks; OPV3, Penta3, PCV3 at 14 weeks; Vitamin A and Measles at 9 months.",
+        "metadata": {"source": "NPHCDA Schedule", "topic": "Immunization"}
+    }
+]
+
+def seed_database():
+    print("--- Starting Knowledge Base Seeding ---")
+    for doc in health_docs:
         try:
-            # Generate embedding for the chunk
-            embedding_response = genai.embed_content(
+            print(f"Embedding: {doc['metadata']['topic']}...")
+            # Generate Embedding using Gemini
+            result = genai.embed_content(
                 model="models/embedding-001",
-                content=chunk,
-                task_type="retrieval_document"
+                content=doc['content'],
+                task_type="retrieval_document",
+                title=doc['metadata']['topic']
             )
-            embedding = embedding_response['embedding']
+            embedding = result['embedding']
             
-            # Store the chunk and its embedding in the database
-            supabase.table('documents').insert({
-                'content': chunk,
-                'embedding': embedding
-            }).execute()
+            # Insert into Supabase
+            data = {
+                "content": doc['content'],
+                "metadata": doc['metadata'],
+                "embedding": embedding
+            }
+            supabase.table("documents").insert(data).execute()
+            print(" -> Success")
             
-            print(f"  -> Stored chunk {i + 1}/{len(chunks)}")
         except Exception as e:
-            print(f"Error on chunk {i + 1}: {e}")
+            print(f" -> Failed: {e}")
 
-    print("\nEmbedding process complete!")
+    print("--- Seeding Complete ---")
 
-if __name__ == '__main__':
-    embed_book()
+if __name__ == "__main__":
+    seed_database()

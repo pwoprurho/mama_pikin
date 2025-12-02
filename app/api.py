@@ -1,26 +1,23 @@
 import os
+import requests
 import pandas as pd
 from io import StringIO
 import google.generativeai as genai
-from flask import Blueprint, jsonify, request, Response, flash, redirect, url_for
+from flask import Blueprint, jsonify, request, Response, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
 from .utils import role_required
 from . import supabase
-import requests
-# NOTE: Removed 'cache' import if it existed, as we are removing the cache decorator
 
 api_bp = Blueprint('api', __name__)
+MODEL_NAME = "gemini-2.5-flash"
 
-# --- Helper function for Google Search ---
 def perform_google_search(query):
-    """Performs a Google search and returns the top results."""
+    """Performs a Google search using Custom Search JSON API."""
     try:
-        # IMPORTANT: You must enable the "Custom Search API" in your Google Cloud project
-        # and create a Custom Search Engine that searches the whole web.
-        search_api_key = os.environ.get("GOOGLE_SEARCH_API_KEY") 
-        search_cx = os.environ.get("GOOGLE_SEARCH_CX") 
+        search_api_key = current_app.config.get("GOOGLE_SEARCH_API_KEY") or os.environ.get("GOOGLE_SEARCH_API_KEY")
+        search_cx = current_app.config.get("GOOGLE_SEARCH_CX") or os.environ.get("GOOGLE_SEARCH_CX")
+        
         if not search_api_key or not search_cx:
-            print("WARNING: GOOGLE_SEARCH_API_KEY or GOOGLE_SEARCH_CX is not set. Search will fail.")
             return []
             
         url = f"https://www.googleapis.com/customsearch/v1?key={search_api_key}&cx={search_cx}&q={query}"
@@ -31,124 +28,177 @@ def perform_google_search(query):
         print(f"Google Search Error: {e}")
         return []
 
+# --- PAYMENT VERIFICATION ---
+@api_bp.route('/api/verify-donation', methods=['POST'])
+def verify_donation():
+    data = request.get_json()
+    reference = data.get('reference')
+    client_email = data.get('email')
+    client_amount = data.get('amount')
+    full_name = data.get('full_name')
+    is_public = data.get('is_public', False)
+
+    if not reference: return jsonify({'status': 'error', 'message': 'No reference'}), 400
+
+    try:
+        paystack_secret = current_app.config.get("PAYSTACK_SECRET_KEY") or os.environ.get("PAYSTACK_SECRET_KEY")
+        if not paystack_secret: return jsonify({'status': 'error', 'message': 'Config Error'}), 500
+
+        verify_url = f"https://api.paystack.co/transaction/verify/{reference}"
+        headers = {'Authorization': f'Bearer {paystack_secret}'}
+        
+        response = requests.get(verify_url, headers=headers)
+        res_data = response.json()
+
+        if res_data['status'] and res_data['data']['status'] == 'success':
+            donation_entry = {
+                'payment_ref': reference,
+                'amount': client_amount,
+                'currency': 'NGN',
+                'donor_email': client_email,
+                'internal_name': full_name,
+                'public_name': full_name if is_public else "Anonymous",
+                'is_public': is_public,
+                'status': 'success'
+            }
+            supabase.table('public_donations').insert(donation_entry).execute()
+            return jsonify({'status': 'success', 'message': 'Verified'})
+        else:
+            return jsonify({'status': 'error', 'message': 'Verification failed'})
+
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+# --- DASHBOARD & ANALYTICS ---
 @api_bp.route('/api/public-stats')
-# NOTE: The @cache.cached(timeout=300) decorator was REMOVED here to ensure fresh data.
 def public_stats():
-    """Provides the latest cached stats for the public homepage."""
     try:
         res = supabase.table('public_stats').select('*').execute()
         stats = {item['stat_key']: item['stat_value'] for item in res.data} if res.data else {}
         return jsonify(stats)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except: return jsonify({})
 
 @api_bp.route('/dashboard-data')
 @login_required
 def dashboard_data():
-    """Provides live data for the main dashboard charts by calling a database function."""
     try:
-        # --- LIVE DATA IMPLEMENTATION ---
-        # Call the RPC function to get all dashboard data in one efficient query
         res = supabase.rpc('get_dashboard_stats').execute()
+        data = res.data or {}
         
-        if res.data:
-            return jsonify(res.data)
-        else:
-            # Provide empty but valid data if the function returns nothing
-            return jsonify({
-                'bar_chart': {'labels': [], 'data': []},
-                'pie_chart': {'labels': [], 'data': []},
-                'line_chart': {'labels': [], 'data': []}
-            })
+        def extract_chart_data(json_list, label_key='label', data_key='count'):
+            if not json_list: return {'labels': [], 'data': []}
+            return {
+                'labels': [item[label_key] for item in json_list],
+                'data': [item[data_key] for item in json_list]
+            }
+
+        return jsonify({
+            'bar_chart': extract_chart_data(data.get('bar_chart', [])),
+            'pie_chart': extract_chart_data(data.get('pie_chart', [])),
+            'line_chart': extract_chart_data(data.get('line_chart', []), label_key='date')
+        })
 
     except Exception as e:
-        print(f"Error fetching dashboard data: {e}")
-        return jsonify({"error": str(e)}), 500
+        print(f"Dashboard Error: {e}")
+        return jsonify({'error': str(e)}), 500
 
-@api_bp.route('/histogram-data')
-@login_required
-def histogram_data():
-    """Provides data for the filterable histogram on the dashboard."""
-    # This is a placeholder; a production version would use a Supabase RPC function.
-    data = {'labels': ['Antenatal', 'Vaccination', 'General'], 'data': [50, 80, 35]}
-    return jsonify(data)
-
-@api_bp.route('/chatbot', methods=['POST'])
-def handle_chatbot():
-    """Handles messages for the advanced, multi-tool health chatbot."""
-    data = request.get_json()
-    user_question = data.get('message', '')
-    chat_history = data.get('history', [])
-
-    if not user_question: return jsonify({'response': 'Please ask a question.'})
-
-    try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
-        # Step 1: Classify the user's intent more granularly
-        intent_prompt = f"""Classify the user's intent from the following input. Is it a 'greeting', 'direct_health_question', 'symptom_description', or 'first_aid_emergency'? Respond with only one of these options. Input: '{user_question}'"""
-        intent_response = model.generate_content(intent_prompt)
-        intent = intent_response.text.strip().lower().replace("'", "")
-
-        # Step 2: Select the correct tool based on the intent
-        if 'greeting' in intent:
-            prompt = f"The user said: '{user_question}'. Respond with a friendly, brief greeting."
-            final_response = model.generate_content(prompt)
-            return jsonify({'response': final_response.text, 'source': 'Conversational'})
-
-        elif 'symptom_description' in intent or 'first_aid_emergency' in intent:
-            print("INFO: Performing live web search.")
-            search_results = perform_google_search(user_question)
-            if not search_results:
-                return jsonify({'response': "I couldn't find any information online for that. Please describe it differently or consult a healthcare professional.", 'source': 'Web Search'})
-
-            context = "Based on the following web search results, provide a helpful and safe answer to the user's question. Start with a strong warning that this is not a substitute for professional medical advice and to seek help immediately if it is an emergency.\n\n---WEB RESULTS---\n"
-            for item in search_results[:3]:
-                context += f"Title: {item.get('title')}\nSnippet: {item.get('snippet')}\n\n"
-            
-            prompt = f"{context}---USER'S SITUATION---\n{user_question}\n\n---ADVICE---\n"
-            final_response = model.generate_content(prompt)
-            return jsonify({'response': final_response.text, 'source': 'Web Search'})
-
-        else: # Default to 'direct_health_question'
-            print("INFO: Performing RAG search on internal documents.")
-            history_context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in chat_history])
-            standalone_question_prompt = f"Given the conversation: {history_context}\n\nRephrase this follow-up as a standalone question: {user_question}"
-            standalone_question = model.generate_content(standalone_question_prompt).text.strip()
-
-            question_embedding = genai.embed_content(model="models/embedding-001", content=standalone_question, task_type="retrieval_query")['embedding']
-            relevant_docs = supabase.rpc('match_documents', {'query_embedding': question_embedding, 'match_threshold': 0.70, 'match_count': 5}).execute().data
-            
-            if not relevant_docs:
-                return jsonify({'response': "I could not find information on that in my knowledge base. Please consult a healthcare professional.", 'source': 'N/A'})
-
-            source_citation = relevant_docs[0].get('source', 'Internal Document')
-            context = "Based ONLY on the provided text from trusted health guides, answer the user's question.\n\n---CONTEXT---\n"
-            for doc in relevant_docs: context += doc['content'] + "\n\n"
-            prompt = f"{context}---QUESTION---\n{user_question}\n\n---ANSWER---\n"
-            final_response = model.generate_content(prompt)
-            return jsonify({'response': final_response.text, 'source': source_citation})
-
-    except Exception as e:
-        print(f"RAG Chatbot Error: {e}")
-        return jsonify({'response': 'Sorry, I encountered an error. Please try again.'})
-
+# --- REPORT GENERATION ---
 @api_bp.route('/download-report', methods=['POST'])
 @login_required
 @role_required('national', 'supa_user')
 def download_report():
-    report_data = [{'patient_name': 'Aisha Bello', 'appointment_datetime': '2025-09-10T10:00:00', 'status': 'confirmed'}]
-    df = pd.DataFrame(report_data)
-    csv_buffer = StringIO()
-    df.to_csv(csv_buffer, index=False)
-    return Response(csv_buffer.getvalue(), mimetype="text/csv", headers={"Content-disposition": "attachment; filename=safemama_report.csv"})
+    try:
+        start_date = request.form.get('start_date')
+        end_date = request.form.get('end_date')
+        service_type = request.form.get('service_type')
+        status = request.form.get('status')
+        
+        query = supabase.table('master_appointments').select(
+            'appointment_datetime, service_type, status, volunteer_notes, patients(full_name, phone_number, lgas(name, states(name)))'
+        ).gte('appointment_datetime', start_date).lte('appointment_datetime', end_date)
+        
+        if service_type != 'all': query = query.eq('service_type', service_type)
+        if status != 'all': query = query.eq('status', status)
+            
+        res = query.execute()
+        data = res.data
+        
+        if not data:
+            flash("No records found.", "error")
+            return redirect(url_for('views.reports'))
+
+        flattened_data = []
+        for item in data:
+            patient = item.get('patients') or {}
+            lga = patient.get('lgas') or {}
+            state = lga.get('states') or {}
+            
+            flattened_data.append({
+                'Date': item['appointment_datetime'],
+                'Patient Name': patient.get('full_name', 'N/A'),
+                'Phone': patient.get('phone_number', 'N/A'),
+                'State': state.get('name', 'N/A'),
+                'LGA': lga.get('name', 'N/A'),
+                'Service': item['service_type'],
+                'Status': item['status'],
+                'Notes': item['volunteer_notes']
+            })
+            
+        df = pd.DataFrame(flattened_data)
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        
+        return Response(
+            csv_buffer.getvalue(),
+            mimetype="text/csv",
+            headers={"Content-disposition": f"attachment; filename=SafeMama_Report_{start_date}.csv"}
+        )
+    except Exception as e:
+        flash(f"Error generating report: {e}", "error")
+        return redirect(url_for('views.reports'))
+
+# --- CHATBOT ---
+@api_bp.route('/chatbot', methods=['POST'])
+def handle_chatbot():
+    data = request.get_json()
+    user_question = data.get('message', '')
+    if not user_question: return jsonify({'response': 'Please ask a question.'})
+
+    try:
+        api_key = current_app.config.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel(MODEL_NAME)
+        
+        intent = model.generate_content(f"Classify intent (greeting/health_question): {user_question}").text.lower()
+        
+        if 'greeting' in intent:
+            return jsonify({'response': "Hello! How can I help you with your health questions today?", 'source': 'Conversational'})
+        
+        try:
+            embedding = genai.embed_content(model="models/embedding-001", content=user_question, task_type="retrieval_query")['embedding']
+            docs = supabase.rpc('match_documents', {'query_embedding': embedding, 'match_threshold': 0.6, 'match_count': 3}).execute().data
+            if docs:
+                context = "\n".join([d['content'] for d in docs])
+                prompt = f"Context: {context}\n\nQuestion: {user_question}\nAnswer:"
+                response = model.generate_content(prompt).text
+                return jsonify({'response': response, 'source': 'Knowledge Base'})
+        except: pass
+
+        response = model.generate_content(f"Answer safely as a health assistant: {user_question}").text
+        return jsonify({'response': response, 'source': 'AI Assistant'})
+
+    except Exception as e:
+        return jsonify({'response': 'System Error. Please try again.'})
 
 @api_bp.route('/complete-case/<uuid:appointment_id>', methods=['POST'])
 @login_required
 def complete_case(appointment_id):
-    notes = request.form.get('notes')
     try:
-        supabase.table('master_appointments').update({'status': 'completed', 'volunteer_notes': notes, 'volunteer_id': current_user.id}).eq('appointment_id', str(appointment_id)).execute()
+        supabase.table('master_appointments').update({
+            'status': 'completed', 
+            'volunteer_notes': request.form.get('notes'), 
+            'volunteer_id': current_user.id
+        }).eq('appointment_id', str(appointment_id)).execute()
         flash('Case marked as completed.', 'success')
     except Exception as e:
         flash(f'Error completing case: {e}', 'error')
@@ -159,5 +209,4 @@ def get_lgas_for_state(state_id):
     try:
         res = supabase.table('lgas').select('id, name').eq('state_id', str(state_id)).order('name').execute()
         return jsonify(res.data)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    except: return jsonify([])
