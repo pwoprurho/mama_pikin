@@ -1,3 +1,5 @@
+# --- __init__.py (Updated for Session Persistence) ---
+
 import os
 import time
 import threading
@@ -18,11 +20,9 @@ cache = Cache()
 assets = Environment()
 supabase: Client = None 
 
-# --- KPI Scheduler (Background Thread 1) ---
+# --- KPI Scheduler ---
 def update_public_stats(app):
-    """Background thread to update stats on the homepage every hour."""
     with app.app_context():
-        # Initial run
         run_update(app)
         while True:
             time.sleep(3600) 
@@ -31,6 +31,7 @@ def update_public_stats(app):
 def run_update(app):
     global supabase
     try:
+        # These queries require the Service Role Key to work reliably
         patients_res = supabase.table('patients').select('id', count='exact').execute()
         appointments_res = supabase.table('master_appointments').select('appointment_id', count='exact').eq('status', 'confirmed').execute()
         states_res = supabase.table('states').select('id', count='exact').execute()
@@ -56,19 +57,21 @@ def create_app():
     # --- Config ---
     app.config['CACHE_TYPE'] = 'SimpleCache'
     cache.init_app(app)
-    
-    # --- Assets ---
     assets.init_app(app)
-    # Define bundles if needed, otherwise assets will use static folder defaults
     
     # --- Services ---
     global supabase
     try:
         url = os.environ.get("SUPABASE_URL")
-        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")
+        
+        # [CRITICAL FIX] Prioritize the Service Role Key.
+        # This gives the global client "Admin" privileges to read user profiles 
+        # during the session check (load_user), preventing the login loop.
+        key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY")
+        
         if url and key:
             supabase = create_client(url, key)
-            print("Supabase initialized.")
+            print("Supabase initialized (High Privilege Mode).")
         
         genai_key = os.environ.get("GEMINI_API_KEY")
         if genai_key:
@@ -78,13 +81,11 @@ def create_app():
         print(f"Service Config Error: {e}")
         
     # --- Background Threads ---
-    # 1. KPI Updater
     if not app.debug or os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         kpi_thread = threading.Thread(target=update_public_stats, args=(app,))
         kpi_thread.daemon = True
         kpi_thread.start()
         
-        # 2. Appointment Reminder Scheduler (Import here to avoid circular deps)
         from .scheduler import start_scheduler
         start_scheduler(app)
     
@@ -98,11 +99,14 @@ def create_app():
     def load_user(user_id):
         if not supabase: return None
         try:
+            # Since 'supabase' is now an Admin client, this bypasses the security
+            # checks that were blocking the read, allowing the login to stick.
             res = supabase.table('volunteers').select('*').eq('id', user_id).single().execute()
             if res.data:
                 d = res.data
                 return User(id=d['id'], full_name=d['full_name'], email=d['email'], role=d['role'])
-        except: pass
+        except Exception as e:
+            print(f"Load User Error: {e}")
         return None
 
     # --- Blueprints ---

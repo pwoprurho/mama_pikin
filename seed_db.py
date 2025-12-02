@@ -1,69 +1,117 @@
 import os
+import glob
+import time
+import random
+from pypdf import PdfReader
 import google.generativeai as genai
 from supabase import create_client
 from dotenv import load_dotenv
 
-# 1. Load Config
+# 1. Load Environment Variables
 load_dotenv()
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY")
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 if not all([SUPABASE_URL, SUPABASE_KEY, GEMINI_API_KEY]):
-    print("Error: Missing environment variables. Check .env file.")
+    print("Error: Missing keys. Ensure SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, and GEMINI_API_KEY are set.")
     exit()
 
 # 2. Initialize Clients
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
 genai.configure(api_key=GEMINI_API_KEY)
 
-# 3. Sample Health Data (Add more as needed)
-health_docs = [
-    {
-        "content": "Antenatal care (ANC) is the care you get from health professionals during your pregnancy. It's sometimes called pregnancy care or maternity care. You should start ANC as soon as you know you're pregnant.",
-        "metadata": {"source": "NHS Guide", "topic": "Antenatal"}
-    },
-    {
-        "content": "Danger signs in pregnancy include: severe headache, blurred vision, convulsions (fits), severe abdominal pain, vaginal bleeding, and fever. If you experience any of these, go to the hospital immediately.",
-        "metadata": {"source": "WHO Maternal Health", "topic": "Emergency"}
-    },
-    {
-        "content": "Exclusive breastfeeding is recommended for the first 6 months of life. It provides all the nutrients a baby needs for growth and development.",
-        "metadata": {"source": "UNICEF Nutrition", "topic": "Postnatal"}
-    },
-    {
-        "content": "Childhood immunization schedule in Nigeria: BCG and OPV0 at birth; OPV1, Penta1, PCV1 at 6 weeks; OPV2, Penta2, PCV2 at 10 weeks; OPV3, Penta3, PCV3 at 14 weeks; Vitamin A and Measles at 9 months.",
-        "metadata": {"source": "NPHCDA Schedule", "topic": "Immunization"}
-    }
-]
+def clean_text(text):
+    """Basic text cleaning."""
+    if not text: return ""
+    return " ".join(text.split())
 
-def seed_database():
-    print("--- Starting Knowledge Base Seeding ---")
-    for doc in health_docs:
+def embed_with_retry(content, title, max_retries=7):
+    """
+    Tries to generate an embedding. If it hits a Rate Limit (429),
+    it waits exponentially longer (4s, 8s, 16s...) before retrying.
+    """
+    for attempt in range(max_retries):
         try:
-            print(f"Embedding: {doc['metadata']['topic']}...")
-            # Generate Embedding using Gemini
             result = genai.embed_content(
-                model="models/embedding-001",
-                content=doc['content'],
+                model="models/text-embedding-004",
+                content=content,
                 task_type="retrieval_document",
-                title=doc['metadata']['topic']
+                title=title
             )
-            embedding = result['embedding']
-            
-            # Insert into Supabase
-            data = {
-                "content": doc['content'],
-                "metadata": doc['metadata'],
-                "embedding": embedding
-            }
-            supabase.table("documents").insert(data).execute()
-            print(" -> Success")
-            
+            return result['embedding']
         except Exception as e:
-            print(f" -> Failed: {e}")
+            error_str = str(e)
+            if "429" in error_str or "quota" in error_str.lower():
+                # Calculate wait time: 2^attempt + random jitter
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                print(f"   [Rate Limit Hit] Cooling down for {wait_time:.1f} seconds...", end="", flush=True)
+                time.sleep(wait_time)
+                print(" Retrying.")
+            else:
+                # If it's not a rate limit error (e.g., connection lost), print and give up on this chunk
+                print(f"   [Error] Failed to embed: {e}")
+                return None
+    
+    print("   [Failed] Exceeded max retries for this page.")
+    return None
 
-    print("--- Seeding Complete ---")
+def process_pdfs():
+    # Looks for PDFs in the knowledge_base folder
+    pdf_files = glob.glob("knowledge_base/*.pdf")
+    
+    if not pdf_files:
+        print("No PDF files found in 'knowledge_base/' folder.")
+        return
+
+    print(f"--- Found {len(pdf_files)} PDF(s). Starting Smart Processing... ---")
+
+    for pdf_path in pdf_files:
+        filename = os.path.basename(pdf_path)
+        print(f"\nProcessing File: {filename}")
+        
+        try:
+            reader = PdfReader(pdf_path)
+            total_pages = len(reader.pages)
+            
+            for i, page in enumerate(reader.pages):
+                page_num = i + 1
+                raw_text = page.extract_text()
+                content = clean_text(raw_text)
+
+                if len(content) < 50:
+                    print(f"  Skipping Page {page_num} (Text too short)")
+                    continue
+
+                print(f"  Embedding Page {page_num}/{total_pages}...", end="", flush=True)
+
+                # Get Embedding with Retry Logic
+                embedding = embed_with_retry(content, f"{filename} - Page {page_num}")
+                
+                if embedding:
+                    # Insert into Supabase
+                    data = {
+                        "content": content,
+                        "metadata": {
+                            "source": filename,
+                            "page": page_num,
+                            "type": "pdf"
+                        },
+                        "embedding": embedding
+                    }
+                    try:
+                        supabase.table("documents").insert(data).execute()
+                        print(" Done.")
+                    except Exception as db_err:
+                        print(f" DB Error: {db_err}")
+
+                # MANDATORY PAUSE: Even on success, wait 4 seconds to stay under ~15 RPM limit
+                time.sleep(4) 
+
+        except Exception as e:
+            print(f"Failed to read PDF {filename}: {e}")
+
+    print("\n--- Knowledge Base Update Complete ---")
 
 if __name__ == "__main__":
-    seed_database()
+    process_pdfs()
