@@ -28,12 +28,8 @@ def perform_google_search(query):
         print(f"Google Search Error: {e}")
         return []
 
-# --- Helper: Web Search Synthesis (The Fallback) ---
+# --- Helper: Web Search Synthesis ---
 def perform_web_search_rag(query, model, is_emergency=False):
-    """
-    Performs a live Google Search and uses the LLM to synthesize 
-    a natural, human-like answer.
-    """
     print(f"INFO: Performing Web Search Fallback for: {query}")
     search_results = perform_google_search(query)
     
@@ -43,38 +39,26 @@ def perform_web_search_rag(query, model, is_emergency=False):
             'source': 'System'
         })
 
-    # Prepare Context from Web Results (Top 4)
     context_text = ""
     for item in search_results[:4]: 
         context_text += f"Source: {item.get('title')}\nSnippet: {item.get('snippet')}\n\n"
     
-    # --- CUSTOM INSTRUCTIONS FOR NATURAL TONE ---
     if is_emergency:
-        # Emergency: Calm, Direct, Paramedic Style
         tone_instruction = """
         URGENT: MEDICAL EMERGENCY DETECTED.
-        
-        ROLE: You are an experienced, calm paramedic. 
-        TONE: Direct, reassuring, and concise. Do NOT sound like a robot. 
-        
+        ROLE: Experienced, calm paramedic. 
+        TONE: Direct, reassuring, and concise.
         INSTRUCTIONS:
-        1. Start with empathy but get straight to the point.
-        2. Tell them to get to a hospital.
-        3. Give 3-4 bullet points of IMMEDIATE actions (e.g., "Keep the limb still").
-        4. Briefly list what NOT to do (e.g., "Do not cut the wound").
-        5. Keep it under 100 words.
+        1. Tell them to get to a hospital.
+        2. Give 3-4 bullet points of IMMEDIATE actions.
+        3. Keep it under 100 words.
         """
         warning_prefix = "⚠️ **Please go to the nearest hospital immediately.**\n\n"
     else:
-        # General Query: Friendly Health Assistant
         tone_instruction = """
-        ROLE: You are SafemamaPikin, a friendly and knowledgeable health assistant.
+        ROLE: SafemamaPikin, a friendly health assistant.
         TONE: Conversational and easy to understand.
-        
-        INSTRUCTIONS:
-        1. Summarize the answer based on the search results.
-        2. Avoid complex medical jargon.
-        3. Be concise (max 3-4 sentences).
+        INSTRUCTIONS: Summarize the answer safely and concisely.
         """
         warning_prefix = ""
 
@@ -99,62 +83,81 @@ def perform_web_search_rag(query, model, is_emergency=False):
         return jsonify({'response': "I am unable to process the web results at this time.", 'source': 'System Error'})
 
 
+# --- Helper: Contextualizer (Chatbot Context) ---
+def contextualize_question(history, current_msg, model):
+    """Rewrites the user's question to include context from the history."""
+    if not history:
+        return current_msg
+    
+    # Format last 3 turns of history
+    history_text = ""
+    for msg in history[-3:]: 
+        role = msg.get('role', 'User')
+        content = msg.get('content', '')
+        history_text += f"{role}: {content}\n"
+    
+    prompt = f"""
+    Given the chat history and the latest user input, rephrase the input into a standalone question that includes the necessary context.
+    If the input is just a greeting (e.g., "Hello"), return it exactly as is.
+    
+    Chat History:
+    {history_text}
+    
+    User Input: "{current_msg}"
+    
+    Standalone Version:
+    """
+    try:
+        refined = model.generate_content(prompt).text.strip()
+        print(f"DEBUG: Contextualized '{current_msg}' -> '{refined}'")
+        return refined
+    except Exception as e:
+        print(f"Contextualization Failed: {e}")
+        return current_msg
+
+
 # --- Main Chatbot Route ---
 @api_bp.route('/chatbot', methods=['POST'])
 def handle_chatbot():
-    """
-    Advanced RAG Chatbot with Strict Hierarchical Intent Classification.
-    """
     data = request.get_json()
-    user_question = data.get('message', '')
+    raw_user_question = data.get('message', '')
+    chat_history = data.get('history', []) 
 
-    if not user_question: 
+    if not raw_user_question: 
         return jsonify({'response': 'Please ask a question.'})
 
     try:
-        # 1. Initialize Gemini Model
         model = genai.GenerativeModel('gemini-2.5-flash')
 
-        # 2. HIERARCHICAL Intent Classification (The Fix)
-        # We enforce a strict priority list.
+        # 1. CONTEXTUALIZATION STEP
+        user_question = contextualize_question(chat_history, raw_user_question, model)
+
+        # 2. Intent Classification
         intent_prompt = f"""
-        Classify the user's intent based on the PRIORITY RULES below.
+        Classify the intent based on PRIORITY RULES.
+        PRIORITY 1: EMERGENCY (Bleeding, severe pain, snake bites, etc.)
+        PRIORITY 2: HEALTH_QUERY (Symptoms, medical questions, advice)
+        PRIORITY 3: GREETING (ONLY pure greetings)
         
-        PRIORITY 1 (Highest): EMERGENCY
-        - Triggers: Bleeding, unconsciousness, severe pain, labor, snake bites, difficulty breathing, or "help".
-        - Override: Even if they say "Hello", if they mention an emergency, it is EMERGENCY.
-        
-        PRIORITY 2: HEALTH_QUERY
-        - Triggers: Describing a symptom ("I have a fever", "my head hurts"), asking a medical question, or seeking advice.
-        - Override: Statements like "I feel sick" (without a question mark) ARE Health Queries.
-        - Override: If they say "Hello, I have a headache", the health part wins. It is a HEALTH_QUERY.
-        
-        PRIORITY 3 (Lowest): GREETING
-        - Triggers: Pure greetings ONLY with NO other content.
-        - Examples: "Hello", "Hi", "Good morning", "Are you there?".
-        
-        User Input: "{user_question}"
-        Response (ONE WORD ONLY: EMERGENCY, HEALTH_QUERY, or GREETING):
+        Input: "{user_question}"
+        Response (ONE WORD):
         """
         intent = model.generate_content(intent_prompt).text.strip().upper()
         
-        print(f"INFO: Classified Intent as '{intent}'") 
+        print(f"INFO: Intent='{intent}' | Query='{user_question}'") 
 
-        # --- PATH A: Greeting ---
         if 'GREETING' in intent:
             return jsonify({
                 'response': "Hello! I am your SafemamaPikin Assistant. How can I help you with your health today?", 
                 'source': 'Conversational'
             })
 
-        # --- PATH B: Emergency (Skip DB, go straight to Web) ---
         if 'EMERGENCY' in intent:
             return perform_web_search_rag(user_question, model, is_emergency=True)
 
-        # --- PATH C: RAG Search with Verification ---
+        # 3. RAG Search
         print("INFO: Attempting Internal Knowledge Search...")
         
-        # 3. Generate Embedding
         embedding_res = genai.embed_content(
             model="models/text-embedding-004", 
             content=user_question, 
@@ -162,35 +165,27 @@ def handle_chatbot():
         )
         question_embedding = embedding_res['embedding']
         
-        # 4. Retrieve Documents (Get top 5)
         relevant_docs = supabase.rpc('match_documents', {
             'query_embedding': question_embedding, 
             'match_threshold': 0.60, 
             'match_count': 5
         }).execute().data
 
-        # 5. The Verification Step ("The Judge")
+        # 4. Verification ("The Judge")
         if relevant_docs:
             doc_context = "\n\n".join([f"[Doc {i+1}]: {d['content']}" for i, d in enumerate(relevant_docs)])
             
             verification_prompt = f"""
             You are a strict Medical Evaluator.
-            
             User Question: "{user_question}"
-            
-            Retrieved Documents:
-            {doc_context}
-            
-            TASK:
-            1. Analyze the documents. Do they contain the SPECIFIC answer?
-            2. If YES: Write "SUFFICIENT" followed by a concise answer derived ONLY from these docs.
-            3. If NO (irrelevant topics): Write "INSUFFICIENT".
+            Retrieved Documents: {doc_context}
+            TASK: 1. Do these documents answer the question? 2. If YES: Write "SUFFICIENT" followed by the answer. 3. If NO: Write "INSUFFICIENT".
             """
             
             verification_response = model.generate_content(verification_prompt).text.strip()
             
             if "INSUFFICIENT" in verification_response:
-                print("INFO: RAG Verification Failed. Falling back to Web Search.")
+                print("INFO: Docs irrelevant. Falling back to Web.")
                 return perform_web_search_rag(user_question, model)
             else:
                 final_answer = verification_response.replace("SUFFICIENT", "").strip()
@@ -198,7 +193,7 @@ def handle_chatbot():
                 return jsonify({'response': final_answer, 'source': source})
 
         else:
-            print("INFO: No internal documents found. Falling back to Web Search.")
+            print("INFO: No docs found. Falling back to Web.")
             return perform_web_search_rag(user_question, model)
 
     except Exception as e:
@@ -206,7 +201,51 @@ def handle_chatbot():
         return jsonify({'response': 'I encountered a system error. Please try again later.'})
 
 
-# --- Other API Routes (Kept from original) ---
+# --- Dashboard Data Route (FIXED FOR FILTERS) ---
+@api_bp.route('/dashboard-data')
+@login_required
+def dashboard_data():
+    """Provides live, filtered data for the dashboard charts."""
+    
+    # 1. Collect filter parameters from the URL query string
+    start_date = request.args.get('date-start')
+    end_date = request.args.get('date-end')
+    service_type = request.args.get('service-type-filter')
+    state_id = request.args.get('state-filter')
+    lga_id = request.args.get('lga-filter')
+
+    # 2. Prepare arguments for the RPC call
+    rpc_args = {
+        'p_start_date': start_date,
+        'p_end_date': end_date,
+        'p_service_type': service_type if service_type != 'all' else None,
+        'p_state_id': state_id if state_id != 'all' else None,
+        'p_lga_id': lga_id if lga_id != 'all' else None,
+    }
+
+    try:
+        # Calls the filtered RPC function
+        res = supabase.rpc('get_dashboard_stats_filtered', rpc_args).execute()
+        
+        if res.data:
+            data = res.data[0] if isinstance(res.data, list) and res.data else res.data
+            return jsonify(data)
+        else:
+            return jsonify({
+                'bar_chart': {'labels': [], 'data': []},
+                'pie_chart': {'labels': [], 'data': []},
+                'line_chart': {'labels': [], 'data': []}
+            }), 200
+    except Exception as e:
+        print(f"Error fetching filtered dashboard data: {e}")
+        return jsonify({
+            'error': str(e),
+            'bar_chart': {'labels': [], 'data': []},
+            'pie_chart': {'labels': [], 'data': []},
+            'line_chart': {'labels': [], 'data': []}
+        }), 500
+
+# --- Other API Routes ---
 
 @api_bp.route('/api/public-stats')
 def public_stats():
@@ -216,29 +255,6 @@ def public_stats():
         return jsonify(stats)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-@api_bp.route('/dashboard-data')
-@login_required
-def dashboard_data():
-    try:
-        res = supabase.rpc('get_dashboard_stats').execute()
-        if res.data:
-            return jsonify(res.data)
-        else:
-            return jsonify({
-                'bar_chart': {'labels': [], 'data': []},
-                'pie_chart': {'labels': [], 'data': []},
-                'line_chart': {'labels': [], 'data': []}
-            })
-    except Exception as e:
-        print(f"Error fetching dashboard data: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@api_bp.route('/histogram-data')
-@login_required
-def histogram_data():
-    data = {'labels': ['Antenatal', 'Vaccination', 'General'], 'data': [50, 80, 35]}
-    return jsonify(data)
 
 @api_bp.route('/download-report', methods=['POST'])
 @login_required

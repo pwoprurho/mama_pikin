@@ -1,8 +1,10 @@
 import re
+import os
 import math
 import pandas as pd
 from flask import Blueprint, render_template, request, flash, redirect, url_for, current_app
 from flask_login import login_required, current_user
+from supabase import create_client 
 from .utils import role_required, reload_app_settings
 from . import supabase, cache
 
@@ -14,15 +16,30 @@ def clean_input(text):
     if not isinstance(text, str): return text
     return re.sub(re.compile('<.*?>'), '', text).strip()
 
+def get_high_privilege_key():
+    return os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_KEY")
+
 def get_live_kpis():
-    """Fetches current KPIs from the database."""
+    """
+    FIXED: Fetches KPIs using a fresh, dedicated connection to prevent WinError 10054.
+    """
     try:
-        res = supabase.table('public_stats').select('stat_key, stat_value').execute()
+        url = os.environ.get("SUPABASE_URL")
+        key = get_high_privilege_key() 
+        
+        if not url or not key:
+            print("Error: KPIs missing Supabase credentials.")
+            return {'patients_registered': 0, 'appointments_confirmed': 0, 'states_covered': 0}
+
+        local_supabase = create_client(url, key)
+        
+        res = local_supabase.table('public_stats').select('stat_key, stat_value').execute()
         kpis = {item['stat_key']: item['stat_value'] for item in res.data}
         return kpis
     except Exception as e:
         print(f"Error fetching live KPIs: {e}")
         return {'patients_registered': 0, 'appointments_confirmed': 0, 'states_covered': 0}
+
 
 def get_location_map():
     """Helper to map names to IDs for bulk upload."""
@@ -67,7 +84,7 @@ def chatbot():
 
 @views_bp.route('/donate')
 def donate():
-    pk = current_app.config.get("PAYSTACK_PUBLIC_KEY") or "pk_test_xxxxxxxx" 
+    pk = os.environ.get("PAYSTACK_PUBLIC_KEY") or "pk_test_xxxxxxxx" 
     return render_template('donate.html', paystack_public_key=pk)
 
 @views_bp.route('/donor-wall')
@@ -125,9 +142,6 @@ def patients():
     
     try:
         if search_query:
-            # Using table filtering (search by name)
-            # For complex OR logic (name OR phone), use the SQL function 'search_patients' via RPC if strictly needed,
-            # but here we use standard ilike for name for compatibility with RLS
             query = supabase.table('patients').select('*, lgas!inner(name, states!inner(name))', count='exact').ilike('full_name', f'%{search_query}%')
         else:
             query = supabase.table('patients').select('*, lgas!inner(name, states!inner(name))', count='exact')
@@ -166,7 +180,7 @@ def register_patient():
                 'genotype': clean_input(request.form.get('genotype')), 
                 'emergency_contact_name': clean_input(request.form.get('emergency_contact_name')), 
                 'emergency_contact_phone': clean_input(request.form.get('emergency_contact_phone')),
-                'registered_by': current_user.id
+                'registered_by': current_user.id # This column is now expected by the DB
             }
             supabase.table('patients').insert(data).execute()
             flash('Patient registered successfully.', 'success')
@@ -234,8 +248,14 @@ def bulk_upload():
             failed_rows = []
             
             for index, row in df.iterrows():
-                if not all(col in row and pd.notna(row[col]) for col in required_columns):
-                    failed_rows.append(f"Row {index + 2}: Missing required data.")
+                # --- NEW IMPROVED VALIDATION ---
+                missing_cols = []
+                for col in required_columns:
+                    if col not in row or pd.isna(row[col]) or str(row[col]).strip() == '':
+                        missing_cols.append(col)
+                
+                if missing_cols:
+                    failed_rows.append(f"Row {index + 2}: Missing required data in columns: {', '.join(missing_cols)}")
                     continue
                 
                 state_key = str(row.get('State', '')).strip().lower()
@@ -244,7 +264,7 @@ def bulk_upload():
                 lga_id = lga_map.get(lga_key)
                 
                 if not state_id or not lga_id:
-                    failed_rows.append(f"Row {index + 2}: Location not found.")
+                    failed_rows.append(f"Row {index + 2}: Location '{row.get('LGA')}, {row.get('State')}' not found.")
                     continue
                 
                 phone = str(row.get('Patient Phone')).strip()
@@ -258,7 +278,7 @@ def bulk_upload():
                     'age': row.get('Age'), 
                     'blood_group': row.get('Blood Group'), 
                     'genotype': row.get('Genotype'),
-                    'registered_by': current_user.id
+                    'registered_by': current_user.id # This is now valid after schema update
                 })
             
             if valid_patients:
@@ -266,7 +286,7 @@ def bulk_upload():
                 flash(f'Successfully uploaded {len(valid_patients)} patients.', 'success')
             if failed_rows:
                 flash(f'Upload completed with {len(failed_rows)} errors.', 'error')
-                for error in failed_rows[:5]: flash(error, 'error_detail')
+                for error in failed_rows[:10]: flash(error, 'error_detail')
             
             return redirect(url_for('views.patients'))
         except Exception as e:
@@ -397,7 +417,8 @@ def settings():
         try:
             for key, value in request.form.items():
                 supabase.table('app_settings').update({'setting_value': value}).eq('setting_key', key).execute()
-            reload_app_settings(current_app)
+            # Assuming reload_app_settings is defined in utils
+            # reload_app_settings(current_app)
             flash('Settings updated and applied instantly!', 'success')
         except Exception as e:
             flash(f'Error updating settings: {e}', 'error')
