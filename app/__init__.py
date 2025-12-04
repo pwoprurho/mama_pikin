@@ -1,8 +1,9 @@
-# --- __init__.py (Final Stable Version) ---
+# --- __init__.py (Final Stable Version with Jinja Filters) ---
 
 import os
 import time
 import threading
+from datetime import datetime
 from flask import Flask, g, render_template
 from flask_login import LoginManager, current_user
 from flask_bcrypt import Bcrypt
@@ -40,7 +41,7 @@ def run_update(app):
     """Creates a fresh connection and performs update with retries."""
     
     url = os.environ.get("SUPABASE_URL")
-    key = get_high_privilege_key() # Use the high-privilege key
+    key = get_high_privilege_key() 
     
     if not url or not key:
         print("KPI Scheduler: Missing Supabase credentials.")
@@ -49,7 +50,6 @@ def run_update(app):
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            # FIX: Create a dedicated connection for this background task
             local_supabase = create_client(url, key)
             
             patients_res = local_supabase.table('patients').select('id', count='exact').execute()
@@ -66,7 +66,7 @@ def run_update(app):
                 local_supabase.table('public_stats').update({'stat_value': v}).eq('stat_key', k).execute()
             
             print(f"KPIs updated: Patients={stats_to_update[0][1]}, Confirmed={stats_to_update[1][1]}, States={stats_to_update[2][1]}")
-            return # Success!
+            return 
 
         except Exception as e:
             print(f"KPI Scheduler Warning (Attempt {attempt+1}/{max_retries}): {e}")
@@ -84,6 +84,26 @@ def create_app():
     app.config['CACHE_TYPE'] = 'SimpleCache'
     cache.init_app(app)
     assets.init_app(app)
+    
+    # --- Jinja Filters (New Addition) ---
+    def datetime_format(value, format='%Y-%m-%d %H:%M'):
+        if not value: return ""
+        if isinstance(value, str):
+            try:
+                # Handle ISO format strings from Supabase
+                dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+            except ValueError:
+                return value
+        else:
+            dt = value
+        return dt.strftime(format)
+
+    def format_currency(value, symbol=''):
+        if value is None: return "0.00"
+        return f"{value:,.2f}"
+
+    app.jinja_env.filters['datetime_format'] = datetime_format
+    app.jinja_env.filters['format_currency'] = format_currency
     
     # --- CONFIGURE GLOBAL CLIENT ---
     global supabase

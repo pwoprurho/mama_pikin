@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Admin Donor Review{% endblock %}
+{% block content %}
+<div class="container" data-aos="fade-up">
+    <h2>All Donation Records (Supa User Only)</h2>
+    <p>This page lists all attempted and successful donations, showing private donor details for administrative purposes.</p>
+
+    <div class="table-section card">
+        <h3>Donation Log</h3>
+        {% if donations %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Donor Name</th>
+                    <th>Donor Email</th>
+                    <th>Amount (NGN)</th>
+                    <th>Status</th>
+                    <th>Reference</th>
+                    <th>Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for donation in donations %}
+                <tr>
+                    <td>{{ donation.donor_name | default('Anonymous', true) }}</td>
+                    <td>{{ donation.donor_email | default('N/A', true) }}</td>
+                    <td>₦{{ (donation.amount | float / 100) | format_currency }}</td>
+                    <td><span class="status-{{ donation.status }}">{{ donation.status | capitalize }}</span></td>
+                    <td>{{ donation.reference }}</td>
+                    <td>{{ donation.created_at | datetime_format }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No donation records found yet.</p>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+/* Add a style for status colors */
+.status-success { color: #28a745; font-weight: bold; } /* Green */
+.status-pending { color: #ffc107; } /* Yellow/Orange */
+.status-failed { color: #dc3545; } /* Red */
+</style>
+{% endblock %}

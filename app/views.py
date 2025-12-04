@@ -93,13 +93,15 @@ def donor_wall():
     total_donations = 0
     show_total = False
     try:
+        # Fetching only successful donations for the public wall
         res = supabase.table('public_donations').select('*').eq('status', 'success').order('created_at', desc=True).execute()
         donations = res.data
         
         settings_res = supabase.table('app_settings').select('setting_value').eq('setting_key', 'DISPLAY_TOTAL_DONATIONS').execute()
         if settings_res.data and settings_res.data[0]['setting_value'].lower() == 'true':
             show_total = True
-            total_donations = sum(float(d['amount']) for d in donations)
+            # Amounts are stored in kobo/cents, divide by 100 for NGN/USD
+            total_donations = sum(float(d['amount']) / 100 for d in donations)
     except Exception as e:
         print(f"Error loading donor wall: {e}")
     return render_template('donor_wall.html', donations=donations, total_donations=total_donations, show_total=show_total)
@@ -180,7 +182,7 @@ def register_patient():
                 'genotype': clean_input(request.form.get('genotype')), 
                 'emergency_contact_name': clean_input(request.form.get('emergency_contact_name')), 
                 'emergency_contact_phone': clean_input(request.form.get('emergency_contact_phone')),
-                'registered_by': current_user.id # This column is now expected by the DB
+                'registered_by': current_user.id 
             }
             supabase.table('patients').insert(data).execute()
             flash('Patient registered successfully.', 'success')
@@ -248,7 +250,6 @@ def bulk_upload():
             failed_rows = []
             
             for index, row in df.iterrows():
-                # --- NEW IMPROVED VALIDATION ---
                 missing_cols = []
                 for col in required_columns:
                     if col not in row or pd.isna(row[col]) or str(row[col]).strip() == '':
@@ -278,7 +279,7 @@ def bulk_upload():
                     'age': row.get('Age'), 
                     'blood_group': row.get('Blood Group'), 
                     'genotype': row.get('Genotype'),
-                    'registered_by': current_user.id # This is now valid after schema update
+                    'registered_by': current_user.id 
                 })
             
             if valid_patients:
@@ -386,6 +387,22 @@ def volunteer_queue():
     return render_template('volunteer_queue.html', patients=patients)
 
 # --- ADMIN ROUTES ---
+
+@views_bp.route('/admin-donations')
+@login_required
+@role_required('supa_user')
+def admin_donations():
+    """Shows all donation records for administrative review (Supa User Only)."""
+    donations = []
+    try:
+        # Fetch ALL donations, regardless of status
+        res = supabase.table('public_donations').select('*').order('created_at', desc=True).execute()
+        donations = res.data
+    except Exception as e:
+        flash(f"Error fetching donation records: {e}", "error")
+
+    return render_template('admin_donations.html', donations=donations)
+
 @views_bp.route('/manage-videos', methods=['GET', 'POST'])
 @login_required
 @role_required('national', 'supa_user')
