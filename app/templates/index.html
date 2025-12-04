@@ -12,9 +12,23 @@
         <img src="{{ url_for('static', filename='images/SafeMamaPikin.png') }}" alt="A healthcare worker with a mother and child">
     </section>
 
+    <section class="about-section container" style="margin-bottom: 3rem;">
+        <div class="card" data-aos="fade-up">
+            <div style="text-align: center; max-width: 800px; margin: 0 auto;">
+                <h2 style="color: var(--primary-color); margin-bottom: 1rem;">About SafemamaPikin</h2>
+                <p style="font-size: 1.1rem; color: #555; line-height: 1.8;">
+                    At SafemamaPikin, we believe no woman should lose her life while giving life. 
+                    By combining cutting-edge <strong>Artificial Intelligence</strong> with a compassionate network of <strong>human volunteers</strong>, 
+                    we bridge the critical gap between rural communities and essential maternal healthcare. 
+                    Our mission is simple: safer pregnancies, healthier babies, and empowered mothers across Nigeria.
+                </p>
+            </div>
+        </div>
+    </section>
+
     <section class="impact-section" id="impact">
         <div class="container">
-            <h2 data-aos="fade-up">Our Impact at a Glance</h2>
+            <h2 data-aos="fade-up" style="text-align: center;">Our Impact at a Glance</h2>
             <div class="impact-grid">
                 <div class="kpi-card" data-aos="fade-up" data-aos-delay="100">
                     <h3 class="kpi-number"><span id="kpi-patients-registered">{{ kpis.patients_registered | default(0) }}</span></h3> 
@@ -22,7 +36,7 @@
                 </div>
                 <div class="kpi-card" data-aos="fade-up" data-aos-delay="200">
                     <h3 class="kpi-number"><span id="kpi-appointments-confirmed">{{ kpis.appointments_confirmed | default(0) }}</span></h3>
-                    <p>Appointment Reminders Sent</p>
+                    <p>Appointments Confirmed</p>
                 </div>
                 <div class="kpi-card" data-aos="fade-up" data-aos-delay="300">
                     <h3 class="kpi-number"><span id="kpi-states-covered">{{ kpis.states_covered | default(0) }}</span></h3>
@@ -32,25 +46,52 @@
         </div>
     </section>
 
-    <section class="features-section container">
-        <h2 data-aos="fade-up">Key Features</h2>
+    <section class="features-section container" style="margin-top: 3rem;">
+        <h2 data-aos="fade-up" style="text-align: center;">Key Features</h2>
         <div class="features-grid">
             <div class="feature-card card" data-aos="fade-up" data-aos-delay="100">
+                <div style="color: var(--primary-color); font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-bullhorn"></i></div>
                 <h4>Automated Reminders</h4>
-                <p>AI-powered voice calls to remind patients of upcoming appointments in their local language.</p>
+                <p>AI-powered voice calls remind patients of upcoming appointments in their local language, reducing no-show rates.</p>
             </div>
+            
             <div class="feature-card card" data-aos="fade-up" data-aos-delay="200">
+                <div style="color: var(--primary-color); font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-hands-helping"></i></div>
                 <h4>Volunteer Escalation</h4>
-                <p>A dedicated queue for volunteers to handle complex queries and follow-ups efficiently.</p>
+                <p>A dedicated queue for volunteers to handle complex queries, failed calls, and follow-ups efficiently.</p>
             </div>
+            
             <div class="feature-card card" data-aos="fade-up" data-aos-delay="300">
+                <div style="color: var(--primary-color); font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-database"></i></div>
                 <h4>Data Management</h4>
-                <p>Securely manage patient and volunteer data with role-based and location-based access controls.</p>
+                <p>Securely manage patient and volunteer data with role-based access controls and location-specific privacy.</p>
             </div>
+            
             <div class="feature-card card" data-aos="fade-up" data-aos-delay="400">
+                <div style="color: var(--primary-color); font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-chart-pie"></i></div>
                 <h4>Advanced Analytics</h4>
-                <p>An intelligent dashboard and reporting system to track project impact and operational metrics.</p>
+                <p>An intelligent dashboard and reporting system to track project impact, call outcomes, and operational metrics.</p>
             </div>
+
+            <div class="feature-card card" data-aos="fade-up" data-aos-delay="500">
+                <div style="color: var(--primary-color); font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-language"></i></div>
+                <h4>Multilingual Support</h4>
+                <p>Breaking language barriers with support for Hausa, Igbo, Yoruba, and Pidgin, ensuring every mother is heard.</p>
+            </div>
+
+            <div class="feature-card card" data-aos="fade-up" data-aos-delay="600">
+                <div style="color: var(--primary-color); font-size: 2rem; margin-bottom: 0.5rem;"><i class="fas fa-shield-alt"></i></div>
+                <h4>Secure Donations</h4>
+                <p>A transparent, secure platform for donors to fund medical supplies and emergency transport directly.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="container" style="text-align: center; margin: 4rem 0;" data-aos="fade-up">
+        <h3>Ready to make a difference?</h3>
+        <div style="margin-top: 1.5rem;">
+            <a href="{{ url_for('views.donate') }}" class="btn" style="margin: 0 10px;">Donate Now</a>
+            <a href="{{ url_for('auth.register_user') }}" class="btn" style="background-color: var(--text-color); margin: 0 10px;">Become a Volunteer</a>
         </div>
     </section>
 {% endblock %}
