@@ -8,89 +8,97 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <link rel="stylesheet" href="https://unpkg.com/aos@next/dist/aos.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <noscript>
+        <style>
+            [data-aos] { opacity: 1 !important; transform: translate(0) !important; }
+            .sidebar { transform: translateX(0) !important; position: static !important; height: auto !important; }
+            .main-content { margin-left: 0 !important; }
+            .top-bar { display: none !important; }
+        </style>
+    </noscript>
 </head>
 <body>
-    <div class="app-container">
-        <aside class="sidebar" id="sidebar">
-            <div class="logo">
+    <aside class="sidebar" id="sidebar">
+        <div class="logo">
+            <h1><a href="{{ url_for('views.home') }}">SafemamaPikin</a></h1>
+        </div>
+        <nav class="nav-links">
+            <a href="{{ url_for('views.home') }}"><i class="fas fa-home"></i><span>Home</span></a>
+            <a href="{{ url_for('views.testimonials') }}"><i class="fas fa-video"></i><span>Stories</span></a>
+            <a href="{{ url_for('views.chatbot') }}"><i class="fas fa-robot"></i><span>AI Assistant</span></a>
+            <a href="{{ url_for('views.donor_wall') }}"><i class="fas fa-heart"></i><span>Donor Wall</span></a>
+            <a href="{{ url_for('views.donate') }}"><i class="fas fa-hand-holding-heart"></i><span>Donate</span></a>
+
+            {% if current_user.is_authenticated %}
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('views.dashboard') }}"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
+                <a href="{{ url_for('views.patients') }}"><i class="fas fa-user-injured"></i><span>Patients</span></a>
+                <a href="{{ url_for('views.appointments') }}"><i class="fas fa-calendar-alt"></i><span>Appointments</span></a>
+                <a href="{{ url_for('views.volunteer_queue') }}"><i class="fas fa-users-cog"></i><span>Queue</span></a>
+                
+                {% if current_user.role in ['national', 'supa_user'] %}
+                    <a href="{{ url_for('views.manage_videos') }}"><i class="fas fa-film"></i><span>Manage Videos</span></a>
+                    <a href="{{ url_for('views.promote_user') }}"><i class="fas fa-user-shield"></i><span>Manage Users</span></a>
+                    <a href="{{ url_for('views.reports') }}"><i class="fas fa-file-download"></i><span>Reports</span></a>
+                {% endif %}
+
+                {% if current_user.role == 'supa_user' %}
+                    <a href="{{ url_for('views.admin_donations') }}"><i class="fas fa-hand-holding-usd"></i><span>Admin Donations</span></a>
+                    <a href="{{ url_for('views.settings') }}"><i class="fas fa-cogs"></i><span>Settings</span></a>
+                {% endif %}
+
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('auth.logout') }}" class="logout-btn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
+                <div class="user-info-mini">
+                    <small>{{ current_user.full_name }}</small>
+                </div>
+            {% else %}
+                <div class="nav-divider"></div>
+                <a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i><span>Login</span></a>
+                <a href="{{ url_for('auth.register_user') }}"><i class="fas fa-user-plus"></i><span>Register</span></a>
+            {% endif %}
+        </nav>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <div class="main-content">
+        <header class="top-bar">
+            <button id="menu-toggle" class="menu-toggle" aria-label="Toggle Navigation">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            <div class="logo-mobile">
                 <h1><a href="{{ url_for('views.home') }}">SafemamaPikin</a></h1>
             </div>
-            
-            <nav class="nav-links">
-                <a href="{{ url_for('views.home') }}"><i class="fas fa-home"></i><span>Home</span></a>
-                <a href="{{ url_for('views.testimonials') }}"><i class="fas fa-video"></i><span>Stories</span></a>
-                <a href="{{ url_for('views.chatbot') }}"><i class="fas fa-robot"></i><span>AI Assistant</span></a>
-                <a href="{{ url_for('views.donor_wall') }}"><i class="fas fa-heart"></i><span>Donor Wall</span></a>
-                <a href="{{ url_for('views.donate') }}"><i class="fas fa-hand-holding-heart"></i><span>Donate</span></a>
+        </header>
 
-                {% if current_user.is_authenticated %}
-                    <div class="nav-divider"></div>
-                    <a href="{{ url_for('views.dashboard') }}"><i class="fas fa-chart-line"></i><span>Dashboard</span></a>
-                    <a href="{{ url_for('views.patients') }}"><i class="fas fa-user-injured"></i><span>Patients</span></a>
-                    <a href="{{ url_for('views.appointments') }}"><i class="fas fa-calendar-alt"></i><span>Appointments</span></a>
-                    <a href="{{ url_for('views.volunteer_queue') }}"><i class="fas fa-users-cog"></i><span>Queue</span></a>
-                    
-                    {% if current_user.role in ['national', 'supa_user'] %}
-                        <a href="{{ url_for('views.manage_videos') }}"><i class="fas fa-film"></i><span>Manage Videos</span></a>
-                        <a href="{{ url_for('views.promote_user') }}"><i class="fas fa-user-shield"></i><span>Manage Users</span></a>
-                        <a href="{{ url_for('views.reports') }}"><i class="fas fa-file-download"></i><span>Reports</span></a>
-                    {% endif %}
-
-                    {% if current_user.role == 'supa_user' %}
-                        <a href="{{ url_for('views.admin_donations') }}"><i class="fas fa-hand-holding-usd"></i><span>Admin Donations</span></a>
-                        <a href="{{ url_for('views.settings') }}"><i class="fas fa-cogs"></i><span>Settings</span></a>
-                    {% endif %}
-
-                    <div class="nav-divider"></div>
-                    <a href="{{ url_for('auth.logout') }}" class="logout-btn"><i class="fas fa-sign-out-alt"></i><span>Logout</span></a>
-                    <div class="user-info-mini">
-                        <small>Logged in as: {{ current_user.full_name }}</small>
+        <main>
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flashes">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
                     </div>
-                {% else %}
-                    <div class="nav-divider"></div>
-                    <a href="{{ url_for('auth.login') }}"><i class="fas fa-sign-in-alt"></i><span>Login</span></a>
-                    <a href="{{ url_for('auth.register_user') }}"><i class="fas fa-user-plus"></i><span>Register</span></a>
                 {% endif %}
-            </nav>
-        </aside>
+            {% endwith %}
+            
+            {% block content %}{% endblock %}
+        </main>
 
-        <div class="main-content">
-            <header class="top-bar">
-                <button id="menu-toggle" class="menu-toggle" aria-label="Toggle Navigation">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                </button>
-                <div class="logo-mobile">
-                    <h1><a href="{{ url_for('views.home') }}">SafemamaPikin</a></h1>
-                </div>
-            </header>
-
-            <main>
-                {% with messages = get_flashed_messages(with_categories=true) %}
-                    {% if messages %}
-                        <div class="flashes">
-                        {% for category, message in messages %}
-                            <div class="alert alert-{{ category }}">{{ message }}</div>
-                        {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-                
-                {% block content %}{% endblock %}
-            </main>
-
-            <footer class="footer">
-                <p>&copy; 2025 SafemamaPikin. All rights reserved.</p>
-            </footer>
-        </div>
+        <footer class="footer">
+            <p>&copy; 2025 SafemamaPikin. All rights reserved.</p>
+        </footer>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -98,10 +106,6 @@
     <script src="https://cdn.jsdelivr.net/npm/countup.js@2.0.7/dist/countUp.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     
-    <script>
-      AOS.init();
-    </script>
-    
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}" defer></script>
 </body>
 </html>

@@ -1,273 +1,221 @@
-/* --- SafemamaPikin Global Stylesheet --- */
-/* --- Final Production Version (with WhatsApp Chatbot Styling and Collapsible Sidebar) --- */
+/* --- SafemamaPikin Master Stylesheet --- */
+/* --- 100% Complete Version --- */
 
-/* --- Import Google Font (Inter) --- */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
-/* --- 1. CSS Variables (Light Theme) --- */
+/* --- 1. CSS VARIABLES --- */
 :root {
-    --bg-body: #F8F8F8;
-    --bg-container: #FFFFFF;
-    --text-primary: #212121;
-    --text-secondary: #666;
-    --accent-primary: #1DE9B6;
-    --accent-secondary: #D1E7FF;
-    --border-color: #E0E0E0;
-    --sidebar-bg: #E8F5E9; /* Light Green */
-    --sidebar-text: #757575; /* Silver */
-
-    /* --- WhatsApp Chat Variables --- */
-    --wa-bg-chat: #E0DDD6; /* Light tiled background color */
-    --wa-bubble-user: #DCF8C6; /* Light green (user/sent) */
-    --wa-bubble-bot: #FFFFFF; /* White/Off-white (bot/received) */
-    --wa-green-header: #075E54; /* WhatsApp dark green */
-    --wa-teal-accent: #128C7E; /* WhatsApp teal */
+    --primary-color: #2E7D32;    /* Green */
+    --secondary-color: #1B5E20;  /* Dark Green */
+    --accent-color: #FFC107;     /* Amber */
+    --text-color: #333333;
+    --text-muted: #666666;
+    --bg-light: #f4f6f8;
+    --white: #ffffff;
+    
+    --sidebar-width: 260px;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+    --transition: all 0.3s ease;
+    
+    /* WhatsApp Chat Theme */
+    --wa-bg-chat: #E5DDD5;
+    --wa-bubble-user: #DCF8C6;
+    --wa-bubble-bot: #FFFFFF;
+    --wa-teal-header: #128C7E;
 }
 
-/* --- 2. Global Resets & Body Styles --- */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-    font-family: 'Inter', sans-serif;
-    background-color: var(--bg-body);
-    color: var(--text-primary);
-    line-height: 1.7;
-    display: flex;
+/* --- 2. GLOBAL RESETS --- */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { 
+    font-family: 'Inter', sans-serif; 
+    background-color: var(--bg-light); 
+    color: var(--text-color); 
+    line-height: 1.6;
+    display: flex; min-height: 100vh; overflow-x: hidden;
 }
+a { text-decoration: none; color: inherit; transition: color 0.2s; }
+ul { list-style: none; }
+img { max-width: 100%; height: auto; display: block; }
 
-/* --- 3. Sidebar Navigation (with New Colors) --- */
+/* --- 3. SIDEBAR NAVIGATION --- */
 .sidebar {
-    width: 250px;
-    background-color: var(--sidebar-bg);
-    border-right: 1px solid var(--border-color);
-    position: fixed; top: 0; left: 0; height: 100%;
-    z-index: 1001; padding: 1.5rem;
-    transition: transform 0.3s ease-in-out, width 0.3s ease-in-out;
+    width: var(--sidebar-width);
+    background-color: var(--primary-color);
+    color: var(--white);
     display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; height: 100vh;
+    z-index: 1001;
+    transition: var(--transition);
     overflow-y: auto;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
 }
-.sidebar .logo a { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
-.sidebar .nav-links { display: flex; flex-direction: column; }
-.sidebar .nav-links a { 
-    padding: 0.8rem 1rem; 
-    margin: 0.2rem 0; 
-    border-radius: 8px; 
-    color: var(--sidebar-text);
-    font-weight: 500; 
-    transition: all 0.2s ease-in-out;
-    display: flex;
-    align-items: center;
-}
-.sidebar .nav-links a i {
-    margin-right: 10px; /* Space for icon */
-    font-size: 1.2rem;
-}
-.sidebar .nav-links a:hover { 
-    background-color: rgba(255, 255, 255, 0.5);
-    color: var(--text-primary); 
-}
-.sidebar .nav-links a.active { 
-    background-color: var(--accent-primary); 
-    color: #FFF; 
-    font-weight: 700; 
-}
+.sidebar .logo { padding: 1.5rem; background-color: var(--secondary-color); text-align: center; }
+.sidebar .logo h1 { font-size: 1.4rem; font-weight: 700; margin: 0; }
+.sidebar .logo a { color: white; }
 
-/* --- COLLAPSED STATE (Desktop) --- */
-.sidebar.collapsed {
-    width: 60px;
-    padding: 1.5rem 0.5rem;
+.nav-links { flex: 1; padding: 1rem 0; }
+.nav-links a {
+    display: flex; align-items: center; padding: 0.8rem 1.5rem;
+    color: rgba(255, 255, 255, 0.9); transition: var(--transition); font-weight: 500;
+    border-left: 4px solid transparent;
 }
-.sidebar.collapsed .logo h1 a {
-    font-size: 0; /* Hide logo text */
-    text-align: center;
-    width: 100%;
-    height: 30px; 
-    overflow: hidden;
+.nav-links a:hover, .nav-links a.active {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-left-color: var(--accent-color); color: white;
 }
-.sidebar.collapsed .nav-links a {
-    padding: 0.8rem 0;
-    justify-content: center;
-}
-.sidebar.collapsed .nav-links a span {
-    display: none; /* Hide link text */
-}
-.sidebar.collapsed .nav-links a i {
-    margin-right: 0; /* No space needed when text is hidden */
-}
+.nav-links i { margin-right: 12px; width: 24px; text-align: center; }
+.nav-divider { height: 1px; background-color: rgba(255,255,255,0.1); margin: 0.8rem 1.5rem; }
+.user-info-mini { padding: 1rem 1.5rem; font-size: 0.85rem; color: rgba(255,255,255,0.7); background-color: rgba(0,0,0,0.1); }
 
-
-/* --- 4. Main Content Wrapper --- */
+/* --- 4. MAIN CONTENT & HEADER --- */
 .main-content {
-    flex-grow: 1; margin-left: 250px;
-    transition: margin-left 0.3s ease-in-out;
-    display: flex; flex-direction: column; min-height: 100vh;
-}
-.main-content.sidebar-collapsed {
-    margin-left: 60px;
-}
-/* Re-establish desktop behavior for a clean transition */
-@media (min-width: 993px) {
-    .sidebar { transform: translateX(0); }
-    .main-content { margin-left: 250px; }
+    flex: 1;
+    margin-left: var(--sidebar-width);
+    padding: 2rem;
+    width: calc(100% - var(--sidebar-width));
+    transition: var(--transition);
+    display: flex; flex-direction: column;
 }
 
-main { flex-grow: 1; }
-.container { max-width: 1200px; margin: 2rem auto; padding: 0 2rem; }
-.header {
-    background-color: var(--bg-container);
-    border-bottom: 1px solid var(--border-color);
-    padding: 1rem 2rem; display: flex; align-items: center;
-    justify-content: flex-start; position: sticky; top: 0; z-index: 1000;
-}
-.footer { text-align: center; padding: 2rem; color: var(--text-secondary); font-size: 0.9rem; }
-
-/* --- 5. Hamburger Menu Toggle --- */
-.menu-toggle { display: block; background: none; border: none; cursor: pointer; padding: 0; z-index: 1002; margin-right: 1.5rem; }
-.menu-toggle span { display: block; width: 25px; height: 3px; background-color: var(--text-primary); margin: 5px 0; transition: all 0.3s ease; }
-.logo-mobile { display: none; }
-
-/* --- 6. Reusable Components --- */
-.card { background-color: var(--bg-container); border: 1px solid var(--border-color); border-radius: 12px; padding: 2rem; margin-bottom: 1.5rem; box-shadow: 0 4px 15px rgba(0,0,0,0.05); transition: transform 0.3s ease, box-shadow 0.3s ease; }
-.card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-.btn { display: inline-block; padding: 0.8rem 1.8rem; background-color: var(--accent-primary); color: var(--text-primary); font-weight: 700; border: none; border-radius: 8px; cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease; }
-.btn:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(29, 233, 182, 0.4); }
-
-/* --- 7. Form Styling & Choices.js Fix --- */
-.form-wrapper { display: flex; justify-content: center; padding: 2rem 0; }
-.form-container { max-width: 600px; width: 100%; }
-.form-group { margin-bottom: 1.5rem; position: relative; z-index: 1; }
-.choices__inner { background-color: white; }
-.choices__list--dropdown { z-index: 10; }
-label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
-input, select, textarea { width: 100%; padding: 12px; background-color: #FFF; border: 1px solid var(--border-color); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 1rem; transition: border-color 0.3s ease, box-shadow 0.3s ease; }
-input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent-primary); box-shadow: 0 0 0 3px rgba(29, 233, 182, 0.3); }
-
-/* --- 8. Table Styling --- */
-.table-section { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; background-color: var(--bg-container); box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; margin-top: 2rem; }
-th, td { padding: 15px; text-align: left; border-bottom: 1px solid var(--border-color); }
-th { background-color: #F5F5F5; font-weight: 700; text-transform: uppercase; font-size: 0.8rem; letter-spacing: 0.5px; }
-tr:last-child td { border-bottom: none; }
-tr:hover { background-color: #F9F9F9; }
-
-/* --- 9. Specific Page Styles --- */
-.hero-section, .impact-section, .features-section, .partners-section { text-align: center; padding: 4rem 2rem; }
-.image-section img { width: 100%; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.1); margin-bottom: 2rem; }
-.error-page { text-align: center; padding: 4rem 0; }
-
-
-/* --- WHATSAPP CHATBOT STYLES (OVERRIDE EXISTING) --- */
-.chatbot-container { 
-    max-width: 700px; 
-    margin: 2rem auto; 
-    background-color: var(--wa-bg-chat); /* WhatsApp Chat Background */
-    /* Tiled background effect */
-    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><circle fill="%23d0d3c6" cx="1" cy="1" r="1"/><circle fill="%23d0d3c6" cx="6" cy="6" r="1"/><circle fill="%23d0d3c6" cx="4" cy="4" r="1"/></svg>');
-    border-radius: 0; /* Full edges like a phone chat window */
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-    display: flex; 
-    flex-direction: column; 
-    height: 70vh; 
-    overflow: hidden; /* Important for clean edges */
-}
-.chat-header-wa {
-    padding: 10px 15px;
-    background-color: var(--wa-teal-accent); /* WhatsApp Dark Teal/Green */
+/* Mobile Header (The Bar containing the Hamburger) */
+.top-bar {
+    display: none; /* Hidden on Desktop */
+    justify-content: space-between; align-items: center;
+    padding: 1rem;
+    background: var(--primary-color); 
     color: white;
-    font-size: 1.1rem;
-    font-weight: 500;
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-}
-.chat-header-wa i {
-    margin-right: 10px;
-}
-.chat-window { 
-    flex-grow: 1; 
-    padding: 20px; 
-    overflow-y: auto; 
-    background-color: transparent; /* Let the tiled background show */
-}
-.message { 
-    padding: 8px 10px; 
-    border-radius: 10px; /* Softer rounded corners */
-    margin-bottom: 10px; 
-    max-width: 80%; 
-    word-wrap: break-word; 
-    position: relative;
-    font-size: 0.95rem;
-    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.1); /* Subtle 3D effect */
+    margin: -2rem -2rem 2rem -2rem; 
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    position: sticky; top: 0; z-index: 999;
 }
 
-/* User (Sent) Message Bubble */
-.user-message { 
-    background-color: var(--wa-bubble-user); 
-    color: var(--text-primary); 
-    margin-left: auto; 
-    border-top-right-radius: 3px; /* WhatsApp sharp corner */
+/* The Hamburger Button Itself */
+.menu-toggle {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 30px;
+    height: 21px;
+    padding: 0;
+    z-index: 1002;
 }
-/* Bot (Received) Message Bubble */
-.bot-message { 
-    background-color: var(--wa-bubble-bot); 
-    color: var(--text-primary); 
-    border-top-left-radius: 3px; /* WhatsApp sharp corner */
-}
-.source-citation {
+
+/* The Lines inside the Button (CRITICAL) */
+.menu-toggle span {
     display: block;
-    margin-top: 5px;
-    font-size: 0.75rem;
-    color: #888;
-    text-align: right; /* Align source citation for user bubble */
-}
-.bot-message .source-citation {
-    text-align: left;
+    width: 100%;
+    height: 3px;
+    background-color: #ffffff; /* Must be white */
+    border-radius: 3px;
+    transition: all 0.3s;
 }
 
-.chat-input { 
-    display: flex; 
-    padding: 10px; 
-    background-color: #F0F0F0; /* Light gray input bar */
-    border-top: 1px solid var(--border-color);
-}
-.chat-input input { 
-    flex-grow: 1; 
-    margin-right: 10px; 
-    padding: 8px 15px;
-    border-radius: 20px; /* Pill-shaped input */
-    border: 1px solid #CCC;
-    box-shadow: none;
-}
-.chat-input .btn {
-    padding: 0.5rem 1rem;
-    background-color: var(--wa-teal-accent); /* WhatsApp Send/Action button color */
-    color: white;
-    font-weight: 500;
-    border-radius: 50%; /* Circular button */
-    width: 45px;
-    height: 45px;
-    min-width: 45px; /* ensure button doesn't shrink */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.chat-input .btn i {
-    color: white;
-    font-size: 1.2rem;
-}
+.logo-mobile h1 { font-size: 1.2rem; margin: 0; color: white; }
 
+/* --- 5. CARDS & GRIDS --- */
+.container { max-width: 1200px; margin: 0 auto; width: 100%; }
+.card {
+    background: var(--white); border-radius: 12px; padding: 1.5rem;
+    box-shadow: var(--shadow); margin-bottom: 1.5rem; height: 100%;
+}
+.impact-grid, .video-grid, .features-grid, .dashboard-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem; margin-top: 1.5rem;
+}
+.kpi-card {
+    background: white; padding: 2rem; border-radius: 12px; text-align: center;
+    box-shadow: var(--shadow); border-bottom: 5px solid var(--accent-color);
+}
+.kpi-number { font-size: 2.5rem; font-weight: 700; color: var(--primary-color); margin-bottom: 0.5rem; }
 
-/* --- 10. Responsive Behavior (Mobile) --- */
+/* --- 6. FORMS & INPUTS --- */
+.form-wrapper { display: flex; justify-content: center; align-items: center; min-height: 60vh; }
+.form-container { width: 100%; max-width: 600px; }
+.form-group { margin-bottom: 1.2rem; }
+label { display: block; margin-bottom: 0.5rem; font-weight: 500; }
+input, select, textarea {
+    width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-size: 1rem;
+    background-color: #fff;
+}
+.btn {
+    display: inline-block; padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color); color: white;
+    font-weight: 600; border: none; border-radius: 6px; cursor: pointer; text-align: center;
+}
+.btn:hover { background-color: var(--secondary-color); }
+.small-btn { padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+
+/* --- 7. TABLES --- */
+.table-section {
+    width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border: 1px solid #eee; border-radius: 8px; background: white;
+}
+table { width: 100%; border-collapse: collapse; min-width: 700px; }
+th, td { padding: 1rem; text-align: left; border-bottom: 1px solid #eee; }
+th { background-color: #f8f9fa; font-weight: 600; }
+.status-success, .status-completed, .status-confirmed { color: #28a745; font-weight: bold; }
+.status-pending, .status-calling { color: #ffc107; font-weight: bold; }
+.status-failed, .status-failed_escalation, .status-unreachable { color: #dc3545; font-weight: bold; }
+
+/* --- 8. WHATSAPP CHATBOT --- */
+.chatbot-container { 
+    max-width: 700px; margin: 0 auto; background-color: var(--wa-bg-chat);
+    background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M11 18c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm48 25c3.866 0 7-3.134 7-7s-3.134-7-7-7-7 3.134-7 7 3.134 7 7 7zm-43-7c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm63 31c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM34 90c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zm56-76c1.657 0 3-1.343 3-3s-1.343-3-3-3-3 1.343-3 3 1.343 3 3 3zM12 86c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm28-65c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm23-11c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-6 60c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm29 22c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zM32 63c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm57-13c2.76 0 5-2.24 5-5s-2.24-5-5-5-5 2.24-5 5 2.24 5 5 5zm-9-21c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM60 91c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM35 41c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2zM12 60c1.105 0 2-.895 2-2s-.895-2-2-2-2 .895-2 2 .895 2 2 2z' fill='%239C92AC' fill-opacity='0.1' fill-rule='evenodd'/%3E%3C/svg%3E");
+    border-radius: 12px; box-shadow: var(--shadow); 
+    display: flex; flex-direction: column; height: 70vh; overflow: hidden; border: 1px solid #ccc;
+}
+.chat-header-wa { padding: 1rem; background-color: var(--wa-teal-header); color: white; display: flex; align-items: center; gap: 10px; }
+.chat-window { flex-grow: 1; padding: 1rem; overflow-y: auto; }
+.message { padding: 0.6rem 1rem; border-radius: 8px; margin-bottom: 0.8rem; max-width: 85%; font-size: 0.95rem; box-shadow: 0 1px 1px rgba(0,0,0,0.1); }
+.user-message { background-color: var(--wa-bubble-user); align-self: flex-end; margin-left: auto; border-top-right-radius: 0; }
+.bot-message { background-color: var(--wa-bubble-bot); align-self: flex-start; margin-right: auto; border-top-left-radius: 0; }
+.chat-input { display: flex; padding: 0.8rem; background-color: #f0f0f0; border-top: 1px solid #ddd; }
+.chat-input input { flex-grow: 1; margin-right: 10px; border-radius: 20px; border: none; padding: 0.8rem 1rem; }
+.chat-input button { border-radius: 50%; width: 45px; height: 45px; display: flex; align-items: center; justify-content: center; padding: 0; }
+
+/* --- 9. MODALS --- */
+.modal {
+    display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; 
+    background-color: rgba(0,0,0,0.6); backdrop-filter: blur(2px); overflow: auto;
+}
+.modal-content {
+    background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; 
+    width: 90%; max-width: 500px; border-radius: 12px; animation: slideDown 0.3s ease-out;
+}
+.close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+@keyframes slideDown { from {top: -50px; opacity: 0;} to {top: 0; opacity: 1;} }
+
+/* --- 10. LANDING & HERO --- */
+.hero-section { text-align: center; padding: 4rem 1rem; background: white; border-radius: 12px; margin-bottom: 2rem; box-shadow: var(--shadow); }
+.hero-section h1 { font-size: 2.5rem; color: var(--primary-color); }
+.video-embed { position: relative; width: 100%; padding-bottom: 56.25%; height: 0; background: #000; margin-bottom: 1rem; }
+.video-embed iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+.error-page { text-align: center; padding: 5rem 1rem; }
+
+/* --- 11. RESPONSIVE BREAKPOINTS (MOBILE LOGIC) --- */
 @media (max-width: 992px) {
     .sidebar { transform: translateX(-100%); }
     .sidebar.active { transform: translateX(0); }
-    .main-content { margin-left: 0; }
-    .main-content.sidebar-collapsed { margin-left: 0; } /* Overrule desktop collapse */
-    .header { justify-content: space-between; }
-    .menu-toggle { display: block; }
-    .logo-mobile { display: block; }
-    .logo-mobile a { font-size: 1.5rem; font-weight: 700; color: var(--text-primary); }
-    .sidebar.collapsed { width: 250px; padding: 1.5rem; } /* Override desktop collapse styles for mobile */
-    .sidebar.collapsed .logo h1 a { font-size: 1.5rem; height: auto; }
-    .sidebar.collapsed .nav-links a span { display: inline; }
-    .sidebar.collapsed .nav-links a i { margin-right: 10px; }
+    
+    .main-content { margin-left: 0; width: 100%; padding: 1.5rem; }
+    
+    /* Show Top Bar on Mobile */
+    .top-bar { display: flex; margin: -1.5rem -1.5rem 1.5rem -1.5rem; }
+    
+    .sidebar-overlay {
+        display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.5); z-index: 1000;
+    }
+    .sidebar-overlay.active { display: block; }
+}
+
+@media (max-width: 576px) {
+    .main-content { padding: 1rem; }
+    .top-bar { margin: -1rem -1rem 1rem -1rem; padding: 0.8rem 1rem; }
+    h1 { font-size: 1.5rem; }
+    .kpi-number { font-size: 2rem; }
+    .chatbot-container { height: 80vh; }
 }
