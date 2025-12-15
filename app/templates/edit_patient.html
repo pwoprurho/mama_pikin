@@ -5,40 +5,96 @@
     <div class="form-container card">
         <h2>Edit Patient: {{ patient.full_name }}</h2>
         <form method="post">
+            
             <fieldset>
-                <legend>Demographics</legend>
+                <legend><i class="fas fa-user"></i> Patient Demographics</legend>
                 <div class="form-group">
-                    <label>Full Name:</label>
-                    <input type="text" name="full_name" value="{{ patient.full_name }}" required>
+                    <label for="full_name">Full Name <span style="color:red">*</span></label>
+                    <input type="text" id="full_name" name="full_name" value="{{ patient.full_name }}" required>
                 </div>
                 <div class="form-group">
-                    <label>Phone Number:</label>
-                    <input type="tel" name="phone_number" value="{{ patient.phone_number }}" required>
+                    <label for="phone_number">Phone Number <span style="color:red">*</span></label>
+                    <input type="tel" id="phone_number" name="phone_number" value="{{ patient.phone_number }}" required>
                 </div>
-                <div class="form-group">
-                    <label>Age:</label>
-                    <input type="number" name="age" value="{{ patient.age }}">
-                </div>
-            </fieldset>
-
-            <fieldset>
-                <legend>Medical Info</legend>
-                <div class="form-group">
-                    <label>Blood Group:</label>
-                    <select name="blood_group">
-                        <option value="{{ patient.blood_group }}" selected>{{ patient.blood_group }}</option>
-                        <option value="A+">A+</option>
-                        <option value="O+">O+</option>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender">
+                            <option value="Female" {% if patient.gender == 'Female' %}selected{% endif %}>Female</option>
+                            <option value="Male" {% if patient.gender == 'Male' %}selected{% endif %}>Male</option>
                         </select>
+                    </div>
+                    <div>
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" value="{{ patient.age }}">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label>Genotype:</label>
-                    <input type="text" name="genotype" value="{{ patient.genotype }}">
+                    <label for="spoken_languages">Spoken Languages</label>
+                    <select id="spoken_languages" name="spoken_languages" multiple>
+                        {% for lang in languages %}
+                            <option value="{{ lang }}" {% if patient.spoken_languages and lang in patient.spoken_languages %}selected{% endif %}>{{ lang }}</option>
+                        {% endfor %}
+                    </select>
+                    <small style="color:#666;">Hold Ctrl/Cmd to select multiple.</small>
                 </div>
             </fieldset>
 
-            <button type="submit" class="btn">Save Changes</button>
-            <a href="{{ url_for('views.patients') }}" class="btn btn-secondary" style="margin-left: 10px; background-color: #6c757d;">Cancel</a>
+            <fieldset>
+                <legend><i class="fas fa-map-marker-alt"></i> Location</legend>
+                <div class="form-group">
+                    <label for="state">State</label>
+                    <select id="state" name="state_id">
+                        <option value="">-- Select State --</option>
+                        {% for state in states %}
+                            <option value="{{ state.id }}" {% if patient_state_id == state.id %}selected{% endif %}>{{ state.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="lga">LGA</label>
+                    <select id="lga" name="lga_id">
+                        <option value="">-- Select LGA --</option>
+                        {% for lga in current_state_lgas %}
+                            <option value="{{ lga.id }}" {% if patient.lga_id == lga.id %}selected{% endif %}>{{ lga.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </fieldset>
+
+            <fieldset>
+                <legend><i class="fas fa-ambulance"></i> Emergency & Medical</legend>
+                <div class="form-group">
+                    <label for="emergency_contact_name">Emergency Contact Name</label>
+                    <input type="text" id="emergency_contact_name" name="emergency_contact_name" value="{{ patient.emergency_contact_name or '' }}">
+                </div>
+                <div class="form-group">
+                    <label for="emergency_contact_phone">Emergency Contact Phone</label>
+                    <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" value="{{ patient.emergency_contact_phone or '' }}">
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label for="blood_group">Blood Group</label>
+                        <select id="blood_group" name="blood_group">
+                            <option value="">Unknown</option>
+                            {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                                <option value="{{ bg }}" {% if patient.blood_group == bg %}selected{% endif %}>{{ bg }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="genotype">Genotype</label>
+                        <select id="genotype" name="genotype">
+                            <option value="">Unknown</option>
+                            {% for gt in ['AA', 'AS', 'SS', 'AC', 'SC'] %}
+                                <option value="{{ gt }}" {% if patient.genotype == gt %}selected{% endif %}>{{ gt }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </fieldset>
+
+            <button type="submit" class="btn btn-block">Update Patient</button>
         </form>
     </div>
 </div>

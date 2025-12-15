@@ -1,95 +1,120 @@
 {% extends "base.html" %}
-{% block title %}Register Patient{% endblock %}
+{% block title %}Register New Patient{% endblock %}
 {% block content %}
 <div class="form-wrapper" data-aos="fade-up">
     <div class="form-container card">
-        <h2>Register New Patient</h2>
+        <h2 style="text-align: center; color: var(--primary-color);">Register New Patient</h2>
         <form method="post">
+            
             <fieldset>
                 <legend>Patient Demographics</legend>
                 <div class="form-group">
-                    <label for="full_name">Full Name:</label>
-                    <input type="text" id="full_name" name="full_name" required>
+                    <label for="full_name">Full Name <span style="color:red">*</span></label>
+                    <input type="text" id="full_name" name="full_name" required placeholder="e.g. Fatima Yusuf">
                 </div>
                 <div class="form-group">
-                    <label for="phone_number">Phone Number:</label>
-                    <input type="tel" id="phone_number" name="phone_number" required>
+                    <label for="phone_number">Phone Number <span style="color:red">*</span></label>
+                    <input type="tel" id="phone_number" name="phone_number" required placeholder="080...">
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label for="gender">Gender</label>
+                        <select id="gender" name="gender">
+                            <option value="Female">Female</option>
+                            <option value="Male">Male</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="age">Age</label>
+                        <input type="number" id="age" name="age" placeholder="e.g. 28">
+                    </div>
                 </div>
                 <div class="form-group">
-                    <label for="gender">Gender:</label>
-                    <select id="gender" name="gender">
-                        <option value="">Select Gender</option>
-                        <option value="Female">Female</option>
-                        <option value="Male">Male</option>
+                    <label for="spoken_languages">Spoken Languages</label>
+                    <select id="spoken_languages" name="spoken_languages" multiple>
+                        {% for lang in languages %}
+                            <option value="{{ lang }}">{{ lang }}</option>
+                        {% endfor %}
                     </select>
-                </div>
-                 <div class="form-group">
-                    <label for="age">Age:</label>
-                    <input type="number" id="age" name="age" min="0">
                 </div>
             </fieldset>
 
             <fieldset>
                 <legend>Location</legend>
                 <div class="form-group">
-                    <label for="state">State:</label>
-                    <select id="state" name="state_id" required>
-                        <option value="">-- Select a State --</option>
+                    <label for="state">State</label>
+                    <select id="state" name="state_id">
+                        <option value="">-- Select State --</option>
                         {% for state in states %}
                             <option value="{{ state.id }}">{{ state.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
                 <div class="form-group">
-                    <label for="lga">LGA:</label>
-                    <select id="lga" name="lga_id" required>
-                        <option value="">-- Select a State First --</option>
+                    <label for="lga">LGA</label>
+                    <select id="lga" name="lga_id">
+                        <option value="">-- Select State First --</option>
                     </select>
                 </div>
             </fieldset>
 
             <fieldset>
-                <legend>Medical Information (Optional)</legend>
+                <legend>Emergency & Medical</legend>
                 <div class="form-group">
-                    <label for="blood_group">Blood Group:</label>
-                    <select id="blood_group" name="blood_group">
-                        <option value="">Unknown</option>
-                        <option value="A+">A+</option>
-                        <option value="A-">A-</option>
-                        <option value="B+">B+</option>
-                        <option value="B-">B-</option>
-                        <option value="AB+">AB+</option>
-                        <option value="AB-">AB-</option>
-                        <option value="O+">O+</option>
-                        <option value="O-">O-</option>
-                    </select>
+                    <label for="emergency_contact_name">Emergency Contact Name</label>
+                    <input type="text" id="emergency_contact_name" name="emergency_contact_name" placeholder="Next of Kin">
                 </div>
                 <div class="form-group">
-                    <label for="genotype">Genotype:</label>
-                    <select id="genotype" name="genotype">
-                        <option value="">Unknown</option>
-                        <option value="AA">AA</option>
-                        <option value="AS">AS</option>
-                        <option value="SS">SS</option>
-                        <option value="AC">AC</option>
-                        <option value="SC">SC</option>
-                    </select>
+                    <label for="emergency_contact_phone">Emergency Contact Phone</label>
+                    <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone" placeholder="080...">
+                </div>
+                <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                        <label for="blood_group">Blood Group</label>
+                        <select id="blood_group" name="blood_group">
+                            <option value="">Unknown</option>
+                            {% for bg in ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] %}
+                                <option value="{{ bg }}">{{ bg }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="genotype">Genotype</label>
+                        <select id="genotype" name="genotype">
+                            <option value="">Unknown</option>
+                            {% for gt in ['AA', 'AS', 'SS', 'AC', 'SC'] %}
+                                <option value="{{ gt }}">{{ gt }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </fieldset>
 
             <fieldset>
-                <legend>Emergency Contact (Optional)</legend>
+                <legend>Initial Appointment</legend>
                 <div class="form-group">
-                    <label for="emergency_contact_name">Contact Name:</label>
-                    <input type="text" id="emergency_contact_name" name="emergency_contact_name">
+                    <label for="service_type">Service Required</label>
+                    <select id="service_type" name="service_type" required>
+                        {% for type in service_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="emergency_contact_phone">Contact Phone:</label>
-                    <input type="tel" id="emergency_contact_phone" name="emergency_contact_phone">
+                    <label for="appointment_datetime">Appointment Date/Time</label>
+                    <input type="datetime-local" id="appointment_datetime" name="appointment_datetime" required>
+                </div>
+                <div class="form-group">
+                    <label for="preferred_language">Preferred Language (For Calls)</label>
+                    <select id="preferred_language" name="preferred_language" required>
+                        {% for lang in languages %}
+                            <option value="{{ lang }}">{{ lang }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </fieldset>
-            
-            <button type="submit" class="btn">Register Patient</button>
+
+            <button type="submit" class="btn btn-block">Register Patient</button>
         </form>
     </div>
 </div>

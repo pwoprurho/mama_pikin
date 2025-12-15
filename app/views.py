@@ -209,11 +209,13 @@ def edit_patient(patient_id):
                 'full_name': clean_input(request.form.get('full_name')),
                 'phone_number': request.form.get('phone_number'),
                 'gender': request.form.get('gender'),
-                'age': request.form.get('age'),
+                'age': request.form.get('age') or None,
                 'blood_group': request.form.get('blood_group'),
                 'genotype': request.form.get('genotype'),
                 'emergency_contact_name': clean_input(request.form.get('emergency_contact_name')),
-                'emergency_contact_phone': request.form.get('emergency_contact_phone')
+                'emergency_contact_phone': request.form.get('emergency_contact_phone'),
+                'lga_id': request.form.get('lga_id') or None,
+                'spoken_languages': request.form.getlist('spoken_languages')
             }
             supabase.table('patients').update(data).eq('id', str(patient_id)).execute()
             flash('Patient details updated.', 'success')
@@ -221,12 +223,38 @@ def edit_patient(patient_id):
         except Exception as e:
             flash(f'Error updating patient: {e}', 'error')
     
+    # GET Logic
     try:
-        patient = supabase.table('patients').select('*').eq('id', str(patient_id)).single().execute().data
-    except:
-        flash("Patient not found.", "error")
+        # Fetch patient with location details (Join with LGAs to get State ID)
+        res = supabase.table('patients').select('*, lgas(id, name, state_id)').eq('id', str(patient_id)).single().execute()
+        patient = res.data
+        if not patient:
+            flash("Patient not found.", "error")
+            return redirect(url_for('views.patients'))
+
+        # Fetch States for dropdown
+        states = supabase.table('states').select('id, name').order('name').execute().data or []
+        
+        # Fetch LGAs for the current state (if patient has a location set)
+        current_state_lgas = []
+        patient_state_id = None
+        
+        if patient.get('lgas'):
+            patient_state_id = patient['lgas']['state_id']
+            # Fetch valid LGAs for this state
+            lga_res = supabase.table('lgas').select('id, name').eq('state_id', patient_state_id).order('name').execute()
+            current_state_lgas = lga_res.data
+            
+    except Exception as e:
+        flash(f"Error fetching data: {e}", "error")
         return redirect(url_for('views.patients'))
-    return render_template('edit_patient.html', patient=patient)
+
+    return render_template('edit_patient.html', 
+                           patient=patient, 
+                           states=states, 
+                           current_state_lgas=current_state_lgas,
+                           patient_state_id=patient_state_id,
+                           languages=['English', 'Yoruba', 'Hausa', 'Igbo', 'Pidgin'])
 
 @views_bp.route('/bulk-upload', methods=['GET', 'POST'])
 @login_required
@@ -434,7 +462,6 @@ def settings():
         try:
             for key, value in request.form.items():
                 supabase.table('app_settings').update({'setting_value': value}).eq('setting_key', key).execute()
-            # Assuming reload_app_settings is defined in utils
             # reload_app_settings(current_app)
             flash('Settings updated and applied instantly!', 'success')
         except Exception as e:
@@ -444,8 +471,9 @@ def settings():
     settings = {}
     try:
         res = supabase.table('app_settings').select('*').execute()
-        settings = {item['setting_key']: item['setting_value'] for item in res.data}
-    except: pass
+        settings = {item['setting_key']: item['stat_value'] if 'stat_value' in item else item['setting_value'] for item in res.data}
+    except Exception as e:
+        flash(f"Error fetching settings: {e}", "error")
     return render_template('settings.html', settings=settings)
 
 @views_bp.route('/promote-user', methods=['GET', 'POST'])
@@ -453,15 +481,23 @@ def settings():
 @role_required('national', 'supa_user')
 def promote_user():
     if request.method == 'POST':
+        user_id, new_role = request.form.get('user_id'), request.form.get('new_role')
         try:
-            supabase.table('volunteers').update({'role': request.form.get('new_role')}).eq('id', request.form.get('user_id')).execute()
+            supabase.table('volunteers').update({'role': new_role}).eq('id', user_id).execute()
             flash('User role updated successfully.', 'success')
         except Exception as e:
             flash(f'Error updating role: {e}', 'error')
         return redirect(url_for('views.promote_user'))
     
-    volunteers = supabase.table('volunteers').select('*').order('full_name').execute().data
-    return render_template('promote_user.html', volunteers=volunteers, promote_options=['volunteer', 'local', 'state', 'national', 'supa_user'])
+    volunteers = []
+    try:
+        res = supabase.table('volunteers').select('*').order('full_name').execute()
+        volunteers = res.data
+    except Exception as e:
+        flash(f"Error fetching volunteers: {e}", "error")
+        
+    promote_options = ['volunteer', 'local', 'state', 'national', 'supa_user']
+    return render_template('promote_user.html', volunteers=volunteers, promote_options=promote_options)
 
 @views_bp.route('/reports')
 @login_required

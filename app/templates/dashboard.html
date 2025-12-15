@@ -1,11 +1,22 @@
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 {% block content %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
 <div class="container dashboard-container">
     <h2 data-aos="fade-up">Dashboard</h2>
 
-    <div class="card histogram-section" data-aos="fade-up">
+    <div class="card map-section" data-aos="fade-up">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+            <h3>Impact Map (Patients by State)</h3>
+            <span class="status-success" style="font-size: 0.9rem;"><i class="fas fa-circle"></i> Live Data</span>
+        </div>
+        <div id="nigeriaMap" style="height: 400px; width: 100%; border-radius: 8px; z-index: 1;"></div>
+    </div>
+
+    <div class="card histogram-section" data-aos="fade-up" style="margin-top: 1.5rem;">
         <h3>Appointment Volume by Service Type</h3>
+        
         <div class="filters">
             <div class="filter-group">
                 <label for="date-start">Start Date:</label>
@@ -15,10 +26,11 @@
                 <label for="date-end">End Date:</label>
                 <input type="date" id="date-end">
             </div>
+            
             <div class="filter-group">
                 <label for="service-type-filter">Service Type:</label>
                 <select id="service-type-filter">
-                    <option value="all">All</option>
+                    <option value="all">All Services</option>
                     <option value="Antenatal Care">Antenatal Care</option>
                     <option value="Postnatal Care">Postnatal Care</option>
                     <option value="Childbirth Delivery">Childbirth Delivery</option>
@@ -28,32 +40,9 @@
                     <option value="General">General</option>
                 </select>
             </div>
-            <div class="filter-group">
-                <label for="status-filter">Status:</label>
-                <select id="status-filter">
-                    <option value="all">All</option>
-                    <option value="confirmed">Confirmed</option>
-                    <option value="rescheduled">Rescheduled</option>
-                    <option value="unreachable">Unreachable</option>
-                    <option value="completed">Completed</option>
-                </select>
-            </div>
-            
-            {% if sub_locations %}
-            <div class="filter-group">
-                <label for="lga-filter">Filter by My LGA:</label>
-                <select id="lga-filter">
-                    <option value="all">All My LGAs</option>
-                    {% for lga in sub_locations %}
-                        <option value="{{ lga.id }}">{{ lga.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            {% endif %}
 
-            {% if current_user.role == 'supa_user' and all_states %}
             <div class="filter-group">
-                <label for="state-filter">Filter by State:</label>
+                <label for="state-filter">State:</label>
                 <select id="state-filter">
                     <option value="all">All States</option>
                     {% for state in all_states %}
@@ -61,39 +50,36 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="filter-group">
-                <label for="lga-filter-supa">Filter by LGA:</label>
-                <select id="lga-filter-supa" disabled>
-                    <option value="all">All LGAs</option>
-                    </select>
-            </div>
-            {% endif %}
             
-            <button onclick="updateHistogram()" class="btn">Apply Filters</button>
+            <div class="filter-group">
+                <label for="apply-filters">&nbsp;</label>
+                <button id="apply-filters" class="btn small-btn">Apply Filters</button>
+            </div>
         </div>
-        <canvas id="serviceHistogramChart"></canvas>
+
+        <div class="chart-container">
+            <canvas id="agentCallsChart"></canvas>
+        </div>
     </div>
 
     <div class="dashboard-grid">
-        <div class="card" data-aos="fade-up" data-aos-delay="100">
-            <h3>AI vs. Human Performance</h3>
-            <canvas id="agentCallsChart"></canvas>
+        <div class="card" data-aos="fade-up">
+            <h3>Call Outcomes</h3>
+            <div class="chart-container-small">
+                <canvas id="outcomesPieChart"></canvas>
+            </div>
         </div>
-
-        <div class="card" data-aos="fade-up" data-aos-delay="200">
-            <h3>Appointment Outcomes</h3>
-            <canvas id="outcomesPieChart"></canvas>
+        <div class="card" data-aos="fade-up">
+            <h3>Traffic Trends (Last 7 Days)</h3>
+            <div class="chart-container-small">
+                <canvas id="callVolumeLineChart"></canvas>
+            </div>
         </div>
     </div>
-    
-    <div class="card" data-aos="fade-up" data-aos-delay="300">
-        <h3>Call Volume Over Time</h3>
-        <canvas id="callVolumeLineChart"></canvas>
-    </div>
 
-    <div class="card" data-aos="fade-up" data-aos-delay="400">
-        <h3>🚨 Recent Failed Escalations (Needs Attention)</h3>
-        <p>These are the latest patients the AI was unable to reach or handle, requiring a manual follow-up.</p>
+    <div class="card" data-aos="fade-up" style="margin-top: 1.5rem;">
+        <h3>Failed Escalations (Action Required)</h3>
+        <p>These are patients the AI could not reach. Please follow up manually.</p>
         {% if failed_escalations %}
         <div class="table-section">
             <table>
@@ -113,10 +99,12 @@
                         <td>{{ escalation.patients.full_name }}</td>
                         <td>{{ escalation.patients.phone_number }}</td>
                         <td>{{ escalation.patients.lgas.name }}</td>
-                        <td>{{ escalation.last_call_timestamp }}</td>
-                        <td>{{ escalation.status | capitalize }}</td>
+                        <td>{{ escalation.last_call_timestamp | datetime_format }}</td>
                         <td>
-                            <button onclick="openModal('{{ escalation.appointment_id }}')" class="btn">View Case</button>
+                            <span class="badge badge-danger">{{ escalation.status | capitalize }}</span>
+                        </td>
+                        <td>
+                            <button onclick="openModal('{{ escalation.appointment_id }}')" class="btn small-btn">View Case</button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -124,9 +112,59 @@
             </table>
         </div>
         {% else %}
-        <p>🎉 Excellent! No failed escalations found in the last batch.</p>
+        <div style="text-align: center; padding: 2rem; background: #f9f9f9; border-radius: 8px;">
+            <i class="fas fa-check-circle" style="color: green; font-size: 2rem;"></i>
+            <p>Excellent! No failed escalations pending.</p>
+        </div>
         {% endif %}
     </div>
+</div>
 
+<div id="notesModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn">&times;</span>
+        <h3>Complete Case</h3>
+        <form id="completeCaseForm" method="post">
+            <div class="form-group">
+                <label for="modal-notes">Volunteer Notes:</label>
+                <textarea id="modal-notes" name="notes" rows="4" required placeholder="Enter resolution details..."></textarea>
+            </div>
+            <button type="submit" class="btn">Mark Completed</button>
+        </form>
     </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+/* Map Digit Styles */
+.map-digit-icon {
+    background-color: #2E7D32; 
+    color: white;
+    border: 2px solid white;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.9rem;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    font-family: 'Inter', sans-serif;
+}
+
+/* Dashboard Filters */
+.filters { display: flex; gap: 1rem; align-items: flex-end; flex-wrap: wrap; margin-bottom: 1rem; }
+.filter-group { flex: 1; min-width: 150px; }
+.chart-container { position: relative; height: 300px; width: 100%; }
+.chart-container-small { position: relative; height: 250px; width: 100%; }
+
+/* Modal Styles */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+.modal-content { background-color: #fefefe; margin: 15% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 10px; position: relative; }
+.close-btn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+.close-btn:hover { color: black; }
+</style>
 {% endblock %}

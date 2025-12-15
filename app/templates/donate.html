@@ -2,107 +2,202 @@
 {% block title %}Donate to SafemamaPikin{% endblock %}
 {% block content %}
 <div class="container" data-aos="fade-up">
-    <div class="form-wrapper">
-        <div class="form-container card">
-            <h2>Support SafemamaPikin</h2>
-            <p>Your contribution helps us provide vital health alerts to mothers in rural communities.</p>
+    <div class="donate-header">
+        <h1>Help Us Save Lives</h1>
+        <p class="subtitle">Your contribution directly funds emergency transport and medical kits for expectant mothers in rural Nigeria.</p>
+    </div>
+
+    <div class="donate-grid">
+        <div class="impact-card-wrapper">
+            <h3>Choose your impact</h3>
+            <div class="donation-options">
+                <div class="donate-option" onclick="selectAmount(1000, this)">
+                    <div class="icon"><i class="fas fa-ambulance"></i></div>
+                    <div class="amount">₦1,000</div>
+                    <div class="desc">Funds emergency transport for one mother.</div>
+                </div>
+                <div class="donate-option selected" onclick="selectAmount(5000, this)">
+                    <div class="icon"><i class="fas fa-briefcase-medical"></i></div>
+                    <div class="amount">₦5,000</div>
+                    <div class="desc">Provides a complete "Mama Kit" for safe delivery.</div>
+                </div>
+                <div class="donate-option" onclick="selectAmount(20000, this)">
+                    <div class="icon"><i class="fas fa-baby"></i></div>
+                    <div class="amount">₦20,000</div>
+                    <div class="desc">Supports postnatal care for a mother and child.</div>
+                </div>
+            </div>
             
+            <div class="custom-amount">
+                <label>Or enter a custom amount (NGN)</label>
+                <input type="number" id="custom-amount-input" placeholder="e.g., 2500" oninput="clearSelection()">
+            </div>
+        </div>
+
+        <div class="payment-form-wrapper card">
+            <h3>Secure Payment</h3>
             <form id="paymentForm">
                 <div class="form-group">
-                    <label for="email">Email Address:</label>
-                    <input type="email" id="email-address" required placeholder="For receipt only">
+                    <label>Email Address <span style="color:red">*</span></label>
+                    <input type="email" id="email-address" required placeholder="you@example.com">
+                    <small style="color: #666; font-size: 0.8rem;">We'll send your receipt here.</small>
                 </div>
                 
-                <div class="form-group">
-                    <label for="full_name">Full Name:</label>
-                    <input type="text" id="full-name" required placeholder="Your name">
+                <div class="form-group name-field">
+                    <label>First Name</label>
+                    <input type="text" id="first-name" required placeholder="John">
+                </div>
+                <div class="form-group name-field">
+                    <label>Last Name</label>
+                    <input type="text" id="last-name" required placeholder="Doe">
                 </div>
 
-                <div class="form-group">
-                    <label for="amount">Amount (NGN):</label>
-                    <input type="number" id="amount" required placeholder="e.g., 5000" min="100">
-                </div>
-
-                <div class="form-group checkbox-group" style="margin: 1rem 0;">
-                    <input type="checkbox" id="is-public">
-                    <label for="is-public" style="display:inline; font-weight:normal;">
-                        Display my name on the <a href="{{ url_for('views.donor_wall') }}" target="_blank">Donor Wall</a>?
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="anonymous-check" onchange="toggleAnonymity()">
+                    <label for="anonymous-check" style="margin-bottom: 0; cursor: pointer;">
+                        <strong>Make this donation anonymous</strong>
+                        <br>
+                        <span style="font-weight: normal; font-size: 0.85rem; color: #666;">Your name will be hidden from the public donor wall.</span>
                     </label>
-                    <br>
-                    <small>If unchecked, your donation will be listed as "Anonymous".</small>
                 </div>
-
-                <div class="form-submit">
-                    <button type="submit" class="btn" id="pay-btn">Donate Now</button>
+                
+                <div class="secure-badge">
+                    <i class="fas fa-lock"></i> Secured by Paystack
                 </div>
+                
+                <button type="submit" class="btn btn-block" onclick="payWithPaystack(event)">Donate Now</button>
             </form>
         </div>
     </div>
 </div>
 
-<script src="https://js.paystack.co/v1/inline.js"></script>
+<script src="https://js.paystack.co/v1/inline.js"></script> 
 
 <script>
-    const paymentForm = document.getElementById('paymentForm');
-    const payBtn = document.getElementById('pay-btn');
+    let selectedAmount = 5000; // Default
 
-    paymentForm.addEventListener("submit", function(e) {
+    function selectAmount(amount, element) {
+        selectedAmount = amount;
+        document.getElementById('custom-amount-input').value = '';
+        
+        // Update UI classes
+        document.querySelectorAll('.donate-option').forEach(el => el.classList.remove('selected'));
+        element.classList.add('selected');
+    }
+
+    function clearSelection() {
+        selectedAmount = 0;
+        document.querySelectorAll('.donate-option').forEach(el => el.classList.remove('selected'));
+    }
+
+    function toggleAnonymity() {
+        const isAnonymous = document.getElementById('anonymous-check').checked;
+        const firstName = document.getElementById('first-name');
+        const lastName = document.getElementById('last-name');
+
+        if (isAnonymous) {
+            // Disable and set to Anonymous
+            firstName.value = "Anonymous";
+            lastName.value = "Donor";
+            firstName.disabled = true;
+            lastName.disabled = true;
+            firstName.style.backgroundColor = "#e9ecef"; // Visual cue
+            lastName.style.backgroundColor = "#e9ecef";
+        } else {
+            // Enable and clear
+            firstName.value = "";
+            lastName.value = "";
+            firstName.disabled = false;
+            lastName.disabled = false;
+            firstName.style.backgroundColor = "#fff";
+            lastName.style.backgroundColor = "#fff";
+        }
+    }
+
+    function payWithPaystack(e) {
         e.preventDefault();
-        payBtn.disabled = true;
-        payBtn.textContent = "Processing...";
+        
+        const email = document.getElementById("email-address").value;
+        let firstname = document.getElementById("first-name").value;
+        let lastname = document.getElementById("last-name").value;
+        const isAnonymous = document.getElementById('anonymous-check').checked;
+        
+        // Use custom input if available, otherwise selectedAmount
+        let finalAmount = document.getElementById('custom-amount-input').value;
+        if (!finalAmount) finalAmount = selectedAmount;
 
-        let email = document.getElementById("email-address").value;
-        let amount = document.getElementById("amount").value;
-        let fullName = document.getElementById("full-name").value;
-        let isPublic = document.getElementById("is-public").checked;
+        if (!email || !finalAmount) {
+            alert("Please provide an email and donation amount.");
+            return;
+        }
 
-        let handler = PaystackPop.setup({
-            key: '{{ paystack_public_key }}', // Passed from Flask view
+        // Final check to ensure we don't send empty names if user unchecked box but didn't type
+        if (!firstname) firstname = "Anonymous";
+        if (!lastname) lastname = "Donor";
+
+        const handler = PaystackPop.setup({
+            key: '{{ paystack_public_key }}', 
             email: email,
-            amount: amount * 100, // Paystack expects amount in kobo
+            amount: finalAmount * 100, // Paystack works in kobo
             currency: 'NGN',
+            firstname: firstname,
+            lastname: lastname,
+            // Pass metadata so we know it was intentional in the backend/admin view
             metadata: {
                 custom_fields: [
-                    { display_name: "Donor Name", variable_name: "donor_name", value: fullName },
-                    { display_name: "Public Consent", variable_name: "is_public", value: isPublic }
+                    {
+                        display_name: "Is Anonymous",
+                        variable_name: "is_anonymous",
+                        value: isAnonymous
+                    }
                 ]
             },
+            ref: '' + Math.floor((Math.random() * 1000000000) + 1), 
             onClose: function(){
                 alert('Transaction cancelled.');
-                payBtn.disabled = false;
-                payBtn.textContent = "Donate Now";
             },
             callback: function(response){
-                // Send reference to backend for verification
-                verifyTransaction(response.reference, email, amount, fullName, isPublic);
+                // Send reference to backend for verification/logging
+                window.location.href = '/donor-wall?ref=' + response.reference;
             }
         });
-
         handler.openIframe();
-    });
-
-    function verifyTransaction(ref, email, amount, name, isPublic) {
-        fetch('/api/verify-donation', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                reference: ref,
-                email: email,
-                amount: amount,
-                full_name: name,
-                is_public: isPublic
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if(data.status === 'success') {
-                window.location.href = "{{ url_for('views.donor_wall') }}";
-            } else {
-                alert('Verification failed: ' + data.message);
-                payBtn.disabled = false;
-            }
-        })
-        .catch(err => console.error(err));
     }
 </script>
+
+<style>
+    .donate-header { text-align: center; margin-bottom: 3rem; }
+    .donate-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
+    
+    /* Option Cards */
+    .donate-option { 
+        background: white; border: 2px solid #eee; border-radius: 10px; padding: 1.5rem; 
+        margin-bottom: 1rem; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 15px;
+    }
+    .donate-option:hover { border-color: var(--primary-color); transform: translateY(-2px); }
+    .donate-option.selected { border-color: var(--primary-color); background-color: #e8f5e9; }
+    
+    .donate-option .icon { font-size: 1.5rem; color: var(--primary-color); width: 40px; text-align: center; }
+    .donate-option .amount { font-weight: 700; font-size: 1.2rem; min-width: 80px; }
+    .donate-option .desc { color: #666; font-size: 0.95rem; }
+
+    /* Form & Checkbox */
+    .checkbox-group { 
+        display: flex; 
+        align-items: flex-start; 
+        gap: 10px; 
+        background: #f9f9f9; 
+        padding: 10px; 
+        border-radius: 6px; 
+        border: 1px solid #eee;
+    }
+    .checkbox-group input { width: auto; margin-top: 5px; } /* Override global input width */
+    
+    .secure-badge { text-align: center; color: #555; font-size: 0.9rem; margin: 1rem 0; }
+    .btn-block { width: 100%; display: block; font-size: 1.1rem; padding: 1rem; }
+
+    @media (max-width: 768px) {
+        .donate-grid { grid-template-columns: 1fr; }
+    }
+</style>
 {% endblock %}
