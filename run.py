@@ -14,7 +14,7 @@ if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     
     # Ensure DEBUG is FALSE unless explicitly set to 'true' in environment
-    debug_mode = os.environ.get("FLASK_DEBUG", "False").lower() == "true"
+    debug_mode = os.environ.get("FLASK_DEBUG", "True").lower() == "true"
     
     if not debug_mode:
         print("WARNING: You are running Flask with the built-in server in production mode.")
