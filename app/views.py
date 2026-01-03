@@ -169,7 +169,9 @@ def register_patient():
         if not re.match(r'^(0[7-9][0-1]\d{8})$', phone):
             flash("Invalid Phone Number. Must be 11 digits starting with 07/08/09.", "error")
             states = supabase.table('states').select('*').order('name').execute().data or []
-            return render_template('register_patient.html', states=states)
+            languages = ['English', 'Yoruba', 'Hausa', 'Igbo', 'Pidgin']
+            service_types = ['Antenatal Care', 'Postnatal Care', 'Childbirth Delivery', 'Immunization', 'Vaccination', 'Family Planning', 'General']
+            return render_template('register_patient.html', states=states, languages=languages, service_types=service_types)
 
         try:
             data = {
@@ -198,7 +200,9 @@ def register_patient():
         states = supabase.table('states').select('*').order('name').execute().data
     except Exception as e:
         flash(f"Could not load states: {e}", "error")
-    return render_template('register_patient.html', states=states)
+    languages = ['English', 'Yoruba', 'Hausa', 'Igbo', 'Pidgin']
+    service_types = ['Antenatal Care', 'Postnatal Care', 'Childbirth Delivery', 'Immunization', 'Vaccination', 'Family Planning', 'General']
+    return render_template('register_patient.html', states=states, languages=languages, service_types=service_types)
 
 @views_bp.route('/edit-patient/<uuid:patient_id>', methods=['GET', 'POST'])
 @login_required

@@ -1,0 +1,5 @@
+Patient Name,Patient Phone,State,LGA,Gender,Age,Blood Group,Genotype,service_type,emergency_contact_name,emergency_contact_phone,preferred_language,appointment_id,appointment_datetime,status,handled_by_ai,volunteer_id,volunteer_name,volunteer_phone,volunteer_email,volunteer_role,volunteer_notes,patient_call_attempts,emergency_call_attempts,last_call_timestamp,human_escalation_attempts,last_escalation_attempt_timestamp,created_at,updated_at
+Fatima Yusuf,8031234567,Lagos,Surulere,Female,28,A+,AA,Antenatal Care,,2.34909E+12,Yoruba,cac0e434-d370-4a51-8a75-8c3fda0462b1,2025-08-20T12:27:00+00:00,calling,TRUE,,,,,,,1,0,2025-08-20T09:33:55.773578+00:00,0,,2025-08-20T08:28:23.947218+00:00,2025-08-20T08:28:23.947218+00:00
+John Doe,7031234567,Oyo,Ibadan North,Male,32,O+,AS,Immunization,Akpojotor Mudiaga,2.35E+12,English,6886e5cf-89a0-4235-81fe-736a833385b8,2025-08-20T12:39:00+00:00,calling,TRUE,,,,,,,1,0,2025-08-20T11:30:14.759914+00:00,0,,2025-08-20T08:41:39.143444+00:00,2025-08-20T08:41:39.143444+00:00
+Aisha Musa,8123486789,Kaduna,Kaduna North,Female,24,B+,AC,,,,,,,,,,,,,,,,,,,,,
+Chima Okeke,8123496789,Abuja,Abaji,Male,40,AB-,SS,,,,,,,,,,,,,,,,,,,,,
