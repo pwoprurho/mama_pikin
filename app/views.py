@@ -311,6 +311,8 @@ def bulk_upload():
                     'age': row.get('Age'), 
                     'blood_group': row.get('Blood Group'), 
                     'genotype': row.get('Genotype'),
+                    'emergency_contact_name': clean_input(str(row.get('Emergency Contact Name', ''))),
+                    'emergency_contact_phone': str(row.get('Emergency Contact Phone', '')).strip(),
                     'registered_by': current_user.id 
                 })
             

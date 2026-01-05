@@ -10,7 +10,7 @@
         "ikwuano",
         "isiala ngwa north",
         "isiala ngwa south",
-        "isiukwuato",
+        "isuikwuato",
         "obingwa",
         "ohafia",
         "osisioma",
@@ -19,7 +19,7 @@
         "ukwa west",
         "umuahia north",
         "umuahia south",
-        "umu nneochi"
+        "umnnneochi"
       ]
     },
     {
@@ -28,9 +28,9 @@
         "demsa",
         "fufore",
         "ganye",
-        "gayuk",
+        "girei",
         "gombi",
-        "grie",
+        "guyuk",
         "hong",
         "jada",
         "lamurde",
@@ -53,14 +53,13 @@
       "localGovt": [
         "abak",
         "eastern obolo",
-        "eka",
         "eket",
         "esit eket",
         "essien udim",
         "etim ekpo",
         "etinan",
         "ibeno",
-        "ibiaaku",
+        "ibesikpo asutan",
         "ibiono ibom",
         "ika",
         "ikono",
@@ -68,21 +67,20 @@
         "ikot ekpene",
         "ini",
         "itu",
-        "mbiang",
+        "mbo",
         "mkpat enin",
         "nsit atai",
         "nsit ibom",
         "nsit ubium",
         "obot akara",
         "okobo",
-        "onya",
-        "orokanam",
+        "onna",
         "oron",
+        "oruk anam",
         "udung uko",
         "ukanafun",
         "uruan",
-        "uruofia",
-        "urue offong-oruko",
+        "urue offong/oruko",
         "uyo"
       ]
     },
@@ -939,8 +937,15 @@
       ]
     },
     {
-      "state": "abuja",
-      "localGovt": ["abaji", "bwari", "gwagwalada", "kuje", "kwali"]
+      "state": "fct",
+      "localGovt": [
+        "abaji",
+        "abuja municipal",
+        "bwari",
+        "gwagwalada",
+        "kuje",
+        "kwali"
+      ]
     }
   ]
 }
